@@ -26,6 +26,7 @@ import { reportApi, type DailyReport, type DayRecap } from "./api";
 import { DoctorTable } from "./doctor-table";
 import { StatusBars } from "./status-bars";
 import { DoctorPeriod, TrendColumns } from "./period-charts";
+import { DownloadButtons } from "./download-menu";
 import { card, percent } from "./format";
 
 const route = getRouteApi("/_protected/rekap");
@@ -96,21 +97,24 @@ function ReportView({
             {formatLongDate(day.date)} · semua dokter
           </p>
         </div>
-        <div className="grid gap-2">
-          <label htmlFor="rekap-tanggal" className="text-sm font-semibold">
-            Tanggal lain
-          </label>
-          <input
-            id="rekap-tanggal"
-            type="date"
-            max={report.today}
-            value={report.date}
-            onChange={(e) => {
-              if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))
-                onAnchorChange(e.target.value);
-            }}
-            className="min-h-12 rounded-md border border-border-strong bg-card px-3 text-base outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary"
-          />
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="grid gap-2">
+            <label htmlFor="rekap-tanggal" className="text-sm font-semibold">
+              Tanggal lain
+            </label>
+            <input
+              id="rekap-tanggal"
+              type="date"
+              max={report.today}
+              value={report.date}
+              onChange={(e) => {
+                if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))
+                  onAnchorChange(e.target.value);
+              }}
+              className="min-h-12 rounded-md border border-border-strong bg-card px-3 text-base outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary"
+            />
+          </div>
+          <DownloadButtons report={report} day={day} />
         </div>
       </header>
 
