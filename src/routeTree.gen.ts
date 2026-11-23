@@ -17,6 +17,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ProtectedDokterRouteImport } from './routes/_protected/dokter'
+import { Route as ProtectedKontrolRouteImport } from './routes/_protected/kontrol'
 import { Route as JanjiCodeRouteImport } from './routes/janji/$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiBookingIndexRouteImport } from './routes/api/booking/index'
@@ -65,6 +66,11 @@ const ProtectedAppRoute = ProtectedAppRouteImport.update({
 const ProtectedDokterRoute = ProtectedDokterRouteImport.update({
   id: '/dokter',
   path: '/dokter',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedKontrolRoute = ProtectedKontrolRouteImport.update({
+  id: '/kontrol',
+  path: '/kontrol',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const JanjiCodeRoute = JanjiCodeRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
+  '/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
+  '/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/_protected/admin': typeof ProtectedAdminRoute
   '/_protected/app': typeof ProtectedAppRoute
   '/_protected/dokter': typeof ProtectedDokterRoute
+  '/_protected/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/dokter'
+    | '/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/dokter'
+    | '/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/_protected/admin'
     | '/_protected/app'
     | '/_protected/dokter'
+    | '/_protected/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/dokter'
       fullPath: '/dokter'
       preLoaderRoute: typeof ProtectedDokterRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/kontrol': {
+      id: '/_protected/kontrol'
+      path: '/kontrol'
+      fullPath: '/kontrol'
+      preLoaderRoute: typeof ProtectedKontrolRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/janji/$code': {
@@ -416,12 +435,14 @@ interface ProtectedRouteChildren {
   ProtectedAdminRoute: typeof ProtectedAdminRoute
   ProtectedAppRoute: typeof ProtectedAppRoute
   ProtectedDokterRoute: typeof ProtectedDokterRoute
+  ProtectedKontrolRoute: typeof ProtectedKontrolRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAdminRoute: ProtectedAdminRoute,
   ProtectedAppRoute: ProtectedAppRoute,
   ProtectedDokterRoute: ProtectedDokterRoute,
+  ProtectedKontrolRoute: ProtectedKontrolRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(

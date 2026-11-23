@@ -5,7 +5,14 @@ import {
   useRouter,
   useRouterState,
 } from "@tanstack/react-router";
-import { CalendarCheck, LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarClock,
+  LogOut,
+  Menu,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
@@ -16,6 +23,7 @@ export type StaffNavItem = { to: string; label: string; icon: LucideIcon };
 // mengikuti peran saat fitur-fiturnya dibuat.
 export const STAFF_NAV: StaffNavItem[] = [
   { to: "/dokter", label: "Jadwal hari ini", icon: CalendarCheck },
+  { to: "/kontrol", label: "Kontrol pasien", icon: CalendarClock },
 ];
 
 function initialsOf(name: string) {
