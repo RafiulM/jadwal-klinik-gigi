@@ -22,3 +22,8 @@ coverage/
 .vercel/
 .claude/settings.local.json
 .codex/config.local.toml
+
+# NgodingPakeAI local sync scratch files
+.ngodingpakeai/pending.json
+.ngodingpakeai/summaries.json
+.ngodingpakeai/index/

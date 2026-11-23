@@ -14,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import { DATES, DOCTORS, SERVICES } from "./mock-data";
+import { StepHeading } from "./step-heading";
+import { StepService } from "./step-service";
 
 export const STEPS = [
   { id: "layanan", label: "Layanan" },
@@ -43,7 +45,7 @@ const EMPTY: BookingState = {
 
 export function BookingPage() {
   const [step, setStep] = useState(0);
-  const [booking] = useState<BookingState>(EMPTY);
+  const [booking, setBooking] = useState<BookingState>(EMPTY);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const lastStepRef = useRef(step);
 
@@ -77,6 +79,16 @@ export function BookingPage() {
     },
   ];
 
+  function chooseService(id: string) {
+    setBooking((prev) => {
+      const current = DOCTORS.find((d) => d.id === prev.doctorId);
+      // Dokter yang tidak melayani layanan baru dilepas, beserta jadwalnya.
+      if (current && !current.serviceIds.includes(id))
+        return { ...prev, serviceId: id, doctorId: null, dateId: null, time: null };
+      return { ...prev, serviceId: id };
+    });
+  }
+
   const canNext =
     step === 0
       ? Boolean(booking.serviceId)
@@ -101,7 +113,16 @@ export function BookingPage() {
           >
             <Stepper current={step} />
 
-            <StepPlaceholder headingRef={headingRef} step={step} />
+            {step === 0 ? (
+              <StepService
+                services={SERVICES}
+                selectedId={booking.serviceId}
+                onSelect={chooseService}
+                headingRef={headingRef}
+              />
+            ) : (
+              <StepPlaceholder headingRef={headingRef} step={step} />
+            )}
 
             <WizardActions
               step={step}
@@ -226,29 +247,6 @@ function StepPlaceholder({
       title={STEPS[step].label}
       lead="Bagian ini sedang disiapkan."
     />
-  );
-}
-
-export function StepHeading({
-  headingRef,
-  title,
-  lead,
-}: {
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
-  title: ReactNode;
-  lead?: ReactNode;
-}) {
-  return (
-    <div className="grid gap-1">
-      <h2
-        ref={headingRef}
-        tabIndex={-1}
-        className="text-xl leading-tight font-bold tracking-tight outline-none"
-      >
-        {title}
-      </h2>
-      {lead ? <p className="text-sm text-muted-foreground">{lead}</p> : null}
-    </div>
   );
 }
 
