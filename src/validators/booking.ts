@@ -51,3 +51,9 @@ export const createBookingSchema = z
   .strict();
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+
+export const bookingCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^JK-[A-Z2-9]{6}$/, "Kode booking tidak valid.");

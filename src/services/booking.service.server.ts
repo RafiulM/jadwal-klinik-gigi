@@ -348,3 +348,46 @@ export async function createBooking(
   }
   throw new Error("Could not allocate a unique booking code.");
 }
+
+// --- Detail janji temu dari kode booking (nomor janji) --------------------------
+
+function maskPhone(phone: string) {
+  return phone.length > 8
+    ? `${phone.slice(0, 4)}${"•".repeat(phone.length - 8)}${phone.slice(-4)}`
+    : phone;
+}
+
+// Kode booking adalah bukti yang dipegang pasien. Nomor HP disamarkan karena
+// siapa pun yang memegang kode bisa membuka halaman ini.
+export async function getBookingByCode(code: string) {
+  const [row] = await db
+    .select({
+      code: appointments.code,
+      date: appointments.appointmentDate,
+      startTime: appointments.startTime,
+      endTime: appointments.endTime,
+      status: appointments.status,
+      serviceName: services.name,
+      doctorName: doctors.name,
+      patientName: patients.name,
+      patientPhone: patients.phone,
+    })
+    .from(appointments)
+    .innerJoin(services, eq(services.id, appointments.serviceId))
+    .innerJoin(doctors, eq(doctors.id, appointments.doctorId))
+    .innerJoin(patients, eq(patients.id, appointments.patientId))
+    .where(eq(appointments.code, code))
+    .limit(1);
+  if (!row) return null;
+  return {
+    code: row.code,
+    date: row.date,
+    time: row.startTime.slice(0, 5),
+    endTime: row.endTime.slice(0, 5),
+    status: row.status,
+    serviceName: row.serviceName,
+    doctorName: row.doctorName,
+    patientName: row.patientName,
+    patientPhone: maskPhone(row.patientPhone),
+  };
+}
