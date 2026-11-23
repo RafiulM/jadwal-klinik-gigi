@@ -1,18 +1,21 @@
-// Masuk staf. Sementara memakai data tiruan sampai peran staf tersedia di
-// backend fase 4: dokter@, admin@, atau pemilik@klinik.test dengan kata
-// sandi minimal 8 karakter.
-import type { StaffRole } from "./roles";
+// Masuk staf lewat Better Auth (email + kata sandi), lalu baca peran dari
+// sesi untuk menentukan halaman awal.
+import { authClient } from "@/lib/auth-client";
+import { homeForRoles, staffRoles } from "./roles";
 
 export class SignInFailure extends Error {}
 
-const mock = {
-  async signIn(email: string, password: string): Promise<{ role: StaffRole }> {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    const match = /^(dokter|admin|pemilik)@klinik\.test$/i.exec(email.trim());
-    if (!match || password.length < 8)
-      throw new SignInFailure("Email atau kata sandi salah");
-    return { role: match[1].toLowerCase() as StaffRole };
+export const accessApi = {
+  async signIn(email: string, password: string) {
+    const result = await authClient.signIn.email({ email, password });
+    if (result.error)
+      throw new SignInFailure(
+        result.error.status === 429
+          ? "Terlalu banyak percobaan masuk"
+          : "Email atau kata sandi salah",
+      );
+    const session = await authClient.getSession();
+    const roles = staffRoles(session.data?.user.role);
+    return { roles, home: homeForRoles(roles) ?? "/tanpa-akses" };
   },
 };
-
-export const accessApi = mock;

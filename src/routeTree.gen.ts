@@ -15,8 +15,6 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as MasukRouteImport } from './routes/masuk'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
-import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
-import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ProtectedDokterRouteImport } from './routes/_protected/dokter'
 import { Route as ProtectedJadwalRouteImport } from './routes/_protected/jadwal'
 import { Route as ProtectedKelolaRouteImport } from './routes/_protected/kelola'
@@ -73,16 +71,6 @@ const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
   getParentRoute: () => AuthRoute,
-} as any)
-const ProtectedAdminRoute = ProtectedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedAppRoute = ProtectedAppRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedDokterRoute = ProtectedDokterRouteImport.update({
   id: '/dokter',
@@ -233,8 +221,6 @@ export interface FileRoutesByFullPath {
   '/masuk': typeof MasukRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
-  '/admin': typeof ProtectedAdminRoute
-  '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
@@ -269,8 +255,6 @@ export interface FileRoutesByTo {
   '/masuk': typeof MasukRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
-  '/admin': typeof ProtectedAdminRoute
-  '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
@@ -308,8 +292,6 @@ export interface FileRoutesById {
   '/masuk': typeof MasukRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
-  '/_protected/admin': typeof ProtectedAdminRoute
-  '/_protected/app': typeof ProtectedAppRoute
   '/_protected/dokter': typeof ProtectedDokterRoute
   '/_protected/jadwal': typeof ProtectedJadwalRoute
   '/_protected/kelola': typeof ProtectedKelolaRoute
@@ -346,8 +328,6 @@ export interface FileRouteTypes {
     | '/masuk'
     | '/sign-in'
     | '/sign-up'
-    | '/admin'
-    | '/app'
     | '/dokter'
     | '/jadwal'
     | '/kelola'
@@ -382,8 +362,6 @@ export interface FileRouteTypes {
     | '/masuk'
     | '/sign-in'
     | '/sign-up'
-    | '/admin'
-    | '/app'
     | '/dokter'
     | '/jadwal'
     | '/kelola'
@@ -420,8 +398,6 @@ export interface FileRouteTypes {
     | '/masuk'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
-    | '/_protected/admin'
-    | '/_protected/app'
     | '/_protected/dokter'
     | '/_protected/jadwal'
     | '/_protected/kelola'
@@ -523,20 +499,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign-up'
       preLoaderRoute: typeof AuthSignUpRouteImport
       parentRoute: typeof AuthRoute
-    }
-    '/_protected/admin': {
-      id: '/_protected/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof ProtectedAdminRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/app': {
-      id: '/_protected/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof ProtectedAppRouteImport
-      parentRoute: typeof ProtectedRoute
     }
     '/_protected/dokter': {
       id: '/_protected/dokter'
@@ -750,8 +712,6 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ProtectedRouteChildren {
-  ProtectedAdminRoute: typeof ProtectedAdminRoute
-  ProtectedAppRoute: typeof ProtectedAppRoute
   ProtectedDokterRoute: typeof ProtectedDokterRoute
   ProtectedJadwalRoute: typeof ProtectedJadwalRoute
   ProtectedKelolaRoute: typeof ProtectedKelolaRoute
@@ -760,8 +720,6 @@ interface ProtectedRouteChildren {
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
-  ProtectedAdminRoute: ProtectedAdminRoute,
-  ProtectedAppRoute: ProtectedAppRoute,
   ProtectedDokterRoute: ProtectedDokterRoute,
   ProtectedJadwalRoute: ProtectedJadwalRoute,
   ProtectedKelolaRoute: ProtectedKelolaRoute,

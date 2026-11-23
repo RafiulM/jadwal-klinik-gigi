@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AuthForm } from "@/components/auth-form";
-import { siteConfig } from "@/config/site";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// Alamat lama dari template; halaman masuk staf kini di /masuk.
 export const Route = createFileRoute("/_auth/sign-in")({
-  head: () => ({ meta: [{ title: `Sign in | ${siteConfig.name}` }] }),
-  component: () => <AuthForm mode="sign-in" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/masuk", replace: true });
+  },
 });

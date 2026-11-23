@@ -5,10 +5,12 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { siteConfig } from "@/config/site";
 
-export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
-  const signingUp = mode === "sign-up";
+/**
+ * Daftar akun staf. Akun baru belum punya peran; admin klinik menautkannya
+ * ke data dokter atau memberi peran admin/pemilik.
+ */
+export function SignUpForm() {
   const router = useRouter();
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
@@ -21,31 +23,27 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     setPending(true);
     setError("");
     try {
-      const credentials = {
+      const result = await authClient.signUp.email({
         email: String(data.get("email")).trim(),
         password: String(data.get("password")),
-      };
-      const result = signingUp
-        ? await authClient.signUp.email({
-            ...credentials,
-            name: String(data.get("name")).trim(),
-          })
-        : await authClient.signIn.email(credentials);
+        name: String(data.get("name")).trim(),
+      });
       if (result.error) {
         setError(
-          signingUp
-            ? result.error.message ||
-                "We couldn't create your account. Please try again."
-            : "We couldn't sign you in. Check your email and password and try again.",
+          result.error.status === 429
+            ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi."
+            : result.error.code === "USER_ALREADY_EXISTS"
+              ? "Email ini sudah terdaftar. Silakan masuk."
+              : "Akun belum bisa dibuat. Periksa data lalu coba lagi.",
         );
         return;
       }
-      // Re-run route guards with the new cookie, then move to the app.
+      // Muat ulang penjaga rute dengan cookie baru; /masuk mengarahkan sesuai peran.
       await router.invalidate();
-      await navigate({ to: siteConfig.homePath, replace: true });
+      await navigate({ to: "/masuk", replace: true });
     } catch {
       setError(
-        "We couldn't reach the server. Check your connection and try again.",
+        "Tidak bisa terhubung ke klinik. Periksa koneksi lalu coba lagi.",
       );
     } finally {
       setPending(false);
@@ -54,16 +52,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 
   return (
     <div className="w-full max-w-sm">
-      <p className="mb-3 text-sm font-medium text-primary">
-        {signingUp ? "A place to begin" : "Good to see you"}
-      </p>
-      <h1 className="text-3xl font-semibold tracking-tight">
-        {signingUp ? "Create your account" : "Welcome back"}
-      </h1>
+      <p className="mb-3 text-sm font-medium text-primary">Akun staf klinik</p>
+      <h1 className="text-3xl font-semibold tracking-tight">Buat akun staf</h1>
       <p className="mt-3 text-base leading-7 text-muted-foreground">
-        {signingUp
-          ? "One small step. Then make this app your own."
-          : "Sign in to pick up where you left off."}
+        Untuk dokter dan staf klinik. Setelah mendaftar, minta admin klinik
+        menautkan akun ini agar menu Anda muncul. Pasien tidak perlu akun.
       </p>
       <form
         onSubmit={onSubmit}
@@ -72,24 +65,20 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
         aria-describedby={error ? "auth-error" : undefined}
       >
         <fieldset disabled={pending} className="space-y-5">
-          <legend className="sr-only">
-            {signingUp ? "Account details" : "Sign in details"}
-          </legend>
-          {signingUp && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                autoComplete="name"
-                placeholder="Your name"
-                required
-                minLength={1}
-                maxLength={100}
-                pattern=".*\S.*"
-              />
-            </div>
-          )}
+          <legend className="sr-only">Data akun</legend>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nama</Label>
+            <Input
+              id="name"
+              name="name"
+              autoComplete="name"
+              placeholder="drg. Nama Lengkap"
+              required
+              minLength={1}
+              maxLength={100}
+              pattern=".*\S.*"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -97,28 +86,26 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder="nama@klinik.test"
               required
               maxLength={254}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Kata sandi</Label>
             <Input
               id="password"
               name="password"
               type="password"
-              autoComplete={signingUp ? "new-password" : "current-password"}
+              autoComplete="new-password"
               required
               minLength={8}
               maxLength={128}
-              aria-describedby={signingUp ? "password-hint" : undefined}
+              aria-describedby="password-hint"
             />
-            {signingUp && (
-              <p id="password-hint" className="text-sm text-muted-foreground">
-                Use at least 8 characters.
-              </p>
-            )}
+            <p id="password-hint" className="text-sm text-muted-foreground">
+              Minimal 8 karakter.
+            </p>
           </div>
           {error && (
             <p
@@ -136,22 +123,18 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
                 aria-hidden="true"
               />
             ) : null}
-            {pending
-              ? "Please wait…"
-              : signingUp
-                ? "Create account"
-                : "Sign in"}
+            {pending ? "Mohon tunggu…" : "Buat akun"}
             {!pending && <ArrowRight aria-hidden="true" />}
           </Button>
         </fieldset>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        {signingUp ? "Already have an account?" : "New here?"}{" "}
+        Sudah punya akun?{" "}
         <Link
           className="rounded-sm font-medium text-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
-          to={signingUp ? "/sign-in" : "/sign-up"}
+          to="/masuk"
         >
-          {signingUp ? "Sign in" : "Create an account"}
+          Masuk
         </Link>
       </p>
     </div>

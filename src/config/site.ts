@@ -5,5 +5,6 @@ export const siteConfig = {
   id: starter.id,
   name: starter.name,
   description: starter.description,
-  homePath: "/app",
+  // Setelah masuk/daftar: /masuk mengarahkan ke halaman awal sesuai peran.
+  homePath: "/masuk",
 } as const;

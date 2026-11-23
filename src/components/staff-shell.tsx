@@ -163,7 +163,7 @@ function StaffSignOut() {
       const result = await authClient.signOut();
       if (result.error) throw new Error("Sign out failed");
       await router.invalidate();
-      await navigate({ to: "/sign-in", replace: true });
+      await navigate({ to: "/masuk", search: { keluar: 1 }, replace: true });
     } catch {
       setError(true);
     } finally {

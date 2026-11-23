@@ -139,21 +139,25 @@ test("a granted role reaches every account, and losing it revokes access", async
   await ownerContext.close();
 });
 
-test("the admin page renders only for a permitted role", async ({ page }) => {
+test("halaman Kelola klinik hanya untuk admin", async ({ page }) => {
   const email = `roles-${randomUUID()}@example.com`;
   await page.goto("/sign-up");
-  await page.getByLabel("Name").fill("Page Viewer");
+  await page.getByLabel("Nama").fill("Staf Baru");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("Roles-test-password-123!");
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/app$/);
+  await page.getByLabel("Kata sandi").fill("Roles-test-password-123!");
+  await page.getByRole("button", { name: "Buat akun" }).click();
+  // Akun baru belum punya peran staf.
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
 
-  await page.goto("/admin");
-  await expect(page.getByText("Every account’s notes")).toHaveCount(0);
+  await page.goto("/kelola");
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
+  await expect(
+    page.getByRole("heading", { name: "Kelola klinik" }),
+  ).toHaveCount(0);
 
   await setRole(email, "admin");
-  await page.goto("/admin");
+  await page.goto("/kelola");
   await expect(
-    page.getByRole("heading", { name: "Every account’s notes" }),
+    page.getByRole("heading", { name: "Kelola klinik" }),
   ).toBeVisible();
 });

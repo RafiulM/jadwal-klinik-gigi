@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test("anonymous visitors cannot access the protected app", async ({
-  page,
-  request,
-}) => {
-  await page.goto("/app");
-  await expect(page).toHaveURL(/\/sign-in$/);
+test("tamu tidak bisa membuka area staf", async ({ page, request }) => {
+  await page.goto("/dokter");
+  await expect(page).toHaveURL(/\/masuk$/);
   await expect(
-    page.getByRole("heading", { name: "Welcome back" }),
+    page.getByRole("heading", { name: "Masuk ke area staf" }),
   ).toBeVisible();
-  // The root is the public booking page: patients book without an account.
+  // Alamat lama template diarahkan ke halaman masuk staf.
+  await page.goto("/sign-in");
+  await expect(page).toHaveURL(/\/masuk$/);
+  // Halaman utama adalah booking publik: pasien tidak perlu akun.
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   await expect(
@@ -19,31 +19,27 @@ test("anonymous visitors cannot access the protected app", async ({
   expect(await session.json()).toBeNull();
 });
 
-test("signup, persisted session, signout, rejected password, and signin work", async ({
+test("daftar, sesi tersimpan, keluar, sandi salah, lalu masuk lagi", async ({
   page,
   context,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const email = `builder-${Date.now()}@example.com`;
+  const email = `staf-${Date.now()}@example.com`;
   const password = "A-long-test-password-123!";
   await page.goto("/sign-up");
-  await page.getByLabel("Name", { exact: true }).fill("Ada Builder");
+  await page.getByLabel("Nama", { exact: true }).fill("Staf Baru");
   await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page
-    .getByRole("button", { name: "Create account", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/app$/);
+  await page.getByLabel("Kata sandi", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Buat akun", exact: true }).click();
+  // Akun baru belum punya peran staf sampai admin memberi akses.
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
   await expect(
     page.getByRole("button", { name: "Keluar", exact: true }),
   ).toBeVisible();
   await page.reload();
-  await expect(page).toHaveURL(/\/app$/);
-  await expect(
-    page.getByRole("button", { name: "Keluar", exact: true }),
-  ).toBeVisible();
-  // The public booking page stays reachable for signed-in staff.
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
+  // Booking publik tetap bisa dibuka staf yang sedang masuk.
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   const cookies = await context.cookies();
@@ -52,21 +48,24 @@ test("signup, persisted session, signout, rejected password, and signin work", a
       (cookie) => cookie.name.includes("session_token") && cookie.httpOnly,
     ),
   ).toBe(true);
-  await page.goto("/sign-in");
-  await expect(page).toHaveURL(/\/app$/);
+  await page.goto("/masuk");
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
   await page.getByRole("button", { name: "Keluar", exact: true }).click();
-  await expect(page).toHaveURL(/\/sign-in$/);
-  await page.goto("/app");
-  await expect(page).toHaveURL(/\/sign-in$/);
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("incorrect-password");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/masuk\?keluar=1$/);
   await expect(
-    page.getByRole("alert").filter({ hasText: "We couldn't sign you in." }),
-  ).toContainText("Check your email and password");
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/app$/);
+    page.getByText("Anda sudah keluar dari area staf."),
+  ).toBeVisible();
+  await page.goto("/dokter");
+  await expect(page).toHaveURL(/\/masuk$/);
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Kata sandi", { exact: true }).fill("sandi-yang-salah");
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Email atau kata sandi salah",
+  );
+  await page.getByLabel("Kata sandi", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
   expect(errors).toEqual([]);
 });
 
@@ -90,21 +89,19 @@ test("auth rejects cross-origin requests and invalid signup data", async ({
   expect(invalid.status()).toBeLessThan(500);
 });
 
-test("auth pages fit a narrow screen", async ({ page }) => {
+test("halaman masuk dan daftar muat di layar sempit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/sign-in");
+  await page.goto("/masuk");
   await expect(
-    page.getByRole("heading", { name: "Welcome back" }),
+    page.getByRole("heading", { name: "Masuk ke area staf" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page
-    .getByRole("link", { name: "Create an account", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Buat akun staf", exact: true }).click();
   await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(

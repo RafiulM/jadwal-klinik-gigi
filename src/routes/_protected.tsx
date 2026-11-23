@@ -7,7 +7,7 @@ import { navForRoles, roleLabel, staffRoles } from "@/features/access/roles";
 // server functions must verify the session themselves.
 export const Route = createFileRoute("/_protected")({
   beforeLoad: ({ context }) => {
-    if (!context.session) throw redirect({ to: "/sign-in" });
+    if (!context.session) throw redirect({ to: "/masuk" });
     return { session: context.session };
   },
   component: ProtectedLayout,

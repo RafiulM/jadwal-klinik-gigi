@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  getRouteApi,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import {
   ArrowLeft,
   Check,
@@ -15,7 +20,9 @@ import {
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import { accessApi, SignInFailure } from "./api";
-import { ROLE_INFO, type StaffRole } from "./roles";
+import { ROLE_INFO, roleLabel, type StaffRole } from "./roles";
+
+const route = getRouteApi("/masuk");
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const input =
@@ -24,6 +31,8 @@ const input =
 /** Halaman masuk staf (dokter, admin, pemilik). Pasien tidak perlu akun. */
 export function LoginPage() {
   const navigate = useNavigate();
+  const router = useRouter();
+  const { keluar } = route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +41,7 @@ export function LoginPage() {
     "idle" | "loading" | "error" | "success"
   >("idle");
   const [failure, setFailure] = useState("");
-  const [role, setRole] = useState<StaffRole | null>(null);
+  const [roles, setRoles] = useState<StaffRole[] | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
@@ -64,9 +73,11 @@ export function LoginPage() {
     setStatus("loading");
     try {
       const result = await accessApi.signIn(email.trim(), password);
-      setRole(result.role);
+      setRoles(result.roles);
       setStatus("success");
-      await navigate({ to: ROLE_INFO[result.role].home, replace: true });
+      // Muat ulang penjaga rute dengan cookie sesi baru.
+      await router.invalidate();
+      await navigate({ to: result.home, replace: true });
     } catch (error) {
       setFailure(
         error instanceof SignInFailure
@@ -158,14 +169,23 @@ export function LoginPage() {
             </div>
           ) : null}
 
-          {status === "success" && role ? (
+          {status === "success" && roles ? (
             <p
               role="status"
               className="flex items-center gap-2 rounded-md bg-success-soft p-4 font-semibold text-success"
             >
               <Check className="size-4" aria-hidden="true" />
-              Berhasil masuk sebagai {ROLE_INFO[role].label.toLowerCase()}.
-              Membuka menu Anda…
+              {roles.length
+                ? `Berhasil masuk sebagai ${roleLabel(roles).toLowerCase()}. Membuka menu Anda…`
+                : "Berhasil masuk. Akun ini belum punya peran staf."}
+            </p>
+          ) : keluar && status === "idle" ? (
+            <p
+              role="status"
+              className="flex items-center gap-2 rounded-md bg-primary-50 p-4 text-sm font-medium"
+            >
+              <Check className="size-4 text-primary" aria-hidden="true" />
+              Anda sudah keluar dari area staf.
             </p>
           ) : null}
 
@@ -275,8 +295,16 @@ export function LoginPage() {
               className="mt-0.5 size-4 shrink-0 text-primary"
               aria-hidden="true"
             />
-            Lupa kata sandi? Hubungi admin klinik. Akun staf hanya dibuat oleh
-            admin.
+            <span>
+              Lupa kata sandi? Hubungi admin klinik. Staf baru?{" "}
+              <Link
+                to="/sign-up"
+                className="rounded-sm font-semibold text-primary underline underline-offset-3 focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                Buat akun staf
+              </Link>
+              , lalu minta admin memberi akses.
+            </span>
           </p>
         </section>
 
