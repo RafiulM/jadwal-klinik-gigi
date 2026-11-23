@@ -8,7 +8,7 @@ import {
   formatLongDate,
 } from "@/features/booking/format";
 import { doctorInitials } from "./schedule-format";
-import type { ScheduleAppointment, ScheduleWeek } from "./mock-data";
+import type { ScheduleAppointment, ScheduleWeek } from "./types";
 
 // Kalender mingguan 09.00–20.00: satu kolom per hari, 80px per jam. Janji temu
 // di jam yang sama ditaruh berdampingan. Warna mengikuti status, selalu dengan

@@ -16,10 +16,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { displayTime, formatLongDate } from "@/features/booking/format";
-import type {
-  ScheduleAppointment,
-  ScheduleAppointmentDetail,
-} from "./mock-data";
+import type { ScheduleAppointment, ScheduleAppointmentDetail } from "./types";
 import { FollowUpBadge } from "@/features/followup/follow-up-status";
 
 function Fact({
