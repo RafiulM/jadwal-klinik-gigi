@@ -29,6 +29,13 @@
       "when": 1795429976335,
       "tag": "0003_booking",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795431801846,
+      "tag": "0004_appointment_status_audit",
+      "breakpoints": true
     }
   ]
 }
