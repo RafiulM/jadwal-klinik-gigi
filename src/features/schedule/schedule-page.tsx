@@ -9,6 +9,7 @@ import {
   Inbox,
   List,
   NotebookPen,
+  RefreshCw,
   RotateCcw,
   Search,
   SearchX,
@@ -31,7 +32,10 @@ import { AppointmentDialog } from "./appointment-dialog";
 import { addDays } from "@/lib/clinic-time";
 import { doctorInitials, mondayOf, weekRangeLabel } from "./schedule-format";
 import { WeekCalendar } from "./week-calendar";
-import { MOCK_TODAY, getMockWeek, type ScheduleWeek } from "./mock-data";
+import { clinicNow } from "@/lib/clinic-time";
+import { useLoad } from "@/lib/use-load";
+import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
+import { scheduleApi, type ScheduleWeek } from "./api";
 
 const route = getRouteApi("/_protected/jadwal");
 
@@ -65,9 +69,28 @@ const STATUS_TILES: {
 export function SchedulePage() {
   const search = route.useSearch();
   const navigate = route.useNavigate();
-  const today = MOCK_TODAY;
+  const today = clinicNow().date;
   const date = search.tanggal ?? today;
-  const week = getMockWeek(mondayOf(date));
+  const from = mondayOf(date);
+  const [load, reload] = useLoad(from, (key) => scheduleApi.week(key));
+  // Saat pindah minggu, tampilan minggu sebelumnya tetap terlihat sampai
+  // data baru datang, supaya toolbar dan fokus tidak hilang.
+  const [shown, setShown] = useState<ScheduleWeek | null>(null);
+  if (load.state === "ready" && load.data !== shown) setShown(load.data);
+  const week = load.state === "ready" ? load.data : shown;
+
+  if (!week)
+    return (
+      <div className="grid gap-4 px-4 pt-5 pb-10 md:p-8 lg:px-10">
+        <h1 className="text-2xl font-bold tracking-tight">Papan jadwal</h1>
+        {load.state === "error" ? (
+          <ErrorNote message={load.message} onRetry={reload} />
+        ) : (
+          <LoadingNote>Memuat jadwal klinik…</LoadingNote>
+        )}
+      </div>
+    );
+
   const doctorId =
     search.dokter && week.doctors.some((d) => d.id === search.dokter)
       ? search.dokter
@@ -78,6 +101,9 @@ export function SchedulePage() {
       week={week}
       date={date}
       doctorId={doctorId}
+      loading={load.state === "loading"}
+      error={load.state === "error" ? load.message : ""}
+      onReload={reload}
       onDateChange={(tanggal) =>
         navigate({
           search: (prev) => ({
@@ -104,12 +130,18 @@ function ScheduleView({
   week,
   date,
   doctorId,
+  loading,
+  error,
+  onReload,
   onDateChange,
   onDoctorChange,
 }: {
   week: ScheduleWeek;
   date: string;
   doctorId: string;
+  loading: boolean;
+  error: string;
+  onReload: () => void;
   onDateChange: (date: string) => void;
   onDoctorChange: (doctorId: string) => void;
 }) {
@@ -144,7 +176,14 @@ function ScheduleView({
   };
   const filtered =
     doctorId !== "semua" || serviceId !== "semua" || status !== "semua" || !!q;
-  const opened = week.appointments.find((a) => a.id === openId) ?? null;
+  // Detail diambil ulang dari API agar catatan/status terbaru dari dokter
+  // terlihat; sementara itu pakai data dari papan.
+  const [detail] = useLoad(openId, (id) => scheduleApi.appointment(id));
+  const opened = openId
+    ? detail.state === "ready" && detail.data.id === openId
+      ? detail.data
+      : (week.appointments.find((a) => a.id === openId) ?? null)
+    : null;
 
   const practicing = (dayOfWeek: number) =>
     week.doctors.some(
@@ -344,6 +383,30 @@ function ScheduleView({
             </span>
           </button>
         ))}
+      </div>
+
+      {error ? (
+        <div className="mb-5">
+          <ErrorNote message={error} onRetry={onReload} />
+        </div>
+      ) : null}
+      <div className="mb-3 flex min-h-6 flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+        <span role="status">{loading ? "Memuat jadwal…" : ""}</span>
+        <button
+          type="button"
+          onClick={onReload}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-sm p-1 font-semibold text-primary underline-offset-3 hover:underline focus-visible:outline-2 focus-visible:outline-primary disabled:text-muted-foreground disabled:no-underline"
+        >
+          <RefreshCw
+            className={cn(
+              "size-3.5",
+              loading && "animate-spin motion-reduce:animate-none",
+            )}
+            aria-hidden="true"
+          />
+          Muat ulang
+        </button>
       </div>
 
       {view === "kalender" ? (
