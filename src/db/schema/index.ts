@@ -11,3 +11,4 @@ export * from "./doctor-schedules";
 export * from "./patients";
 export * from "./appointments";
 export * from "./outbox-events";
+export * from "./follow-ups";
