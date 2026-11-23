@@ -20,10 +20,47 @@ import {
   doctorSchedules,
   doctorServices,
   doctors,
+  followUps,
   services,
 } from "@/db/schema";
 
 // Booking publik (tanpa akun): hanya data yang boleh dilihat pasien.
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Status kontrol diturunkan dari jadwal: booking baru untuk layanan yang sama
+ * memenuhi kontrol pasien yang masih "pending" (jatuh tempo paling awal) dan
+ * mengubahnya menjadi "booked". n8n diberi tahu agar berhenti mengingatkan.
+ */
+async function linkFollowUpBooking(
+  tx: Tx,
+  input: { patientId: string; serviceId: string; appointmentId: string },
+) {
+  const [followUp] = await tx
+    .select({ id: followUps.id })
+    .from(followUps)
+    .where(
+      and(
+        eq(followUps.patientId, input.patientId),
+        eq(followUps.serviceId, input.serviceId),
+        eq(followUps.status, "pending"),
+      ),
+    )
+    .orderBy(asc(followUps.dueDate))
+    .for("update")
+    .limit(1);
+  if (!followUp) return;
+  await tx
+    .update(followUps)
+    .set({ status: "booked", bookedAppointmentId: input.appointmentId })
+    .where(eq(followUps.id, followUp.id));
+  await tx.insert(outboxEvents).values({
+    eventType: "follow_up_booked",
+    appointmentId: input.appointmentId,
+    payload: { followUpId: followUp.id, appointmentId: input.appointmentId },
+  });
+}
 
 export async function listActiveServices() {
   return db
@@ -334,6 +371,12 @@ export async function createBooking(
           eventType: "appointment_created",
           appointmentId: appointment.id,
           payload: { appointmentId: appointment.id, ...booking },
+        });
+
+        await linkFollowUpBooking(tx, {
+          patientId: patient.id,
+          serviceId: service.id,
+          appointmentId: appointment.id,
         });
 
         return booking;

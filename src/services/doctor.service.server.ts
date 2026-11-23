@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   appointments,
@@ -150,6 +150,12 @@ export class AppointmentUpdateError extends Error {
   }
 }
 
+const FOLLOW_UP_FROM_VISIT = {
+  scheduled: "booked",
+  completed: "done",
+  no_show: "pending",
+} as const;
+
 function daysBetween(from: string, to: string) {
   return Math.round(
     (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
@@ -167,8 +173,8 @@ function daysBetween(from: string, to: string) {
  * - Tanggal kontrol hanya untuk kunjungan selesai, setelah hari ini dan paling
  *   lambat 2 tahun lagi. Kontrol yang sudah dibooking/dijalani tidak diubah.
  * - Membatalkan tanda selesai menghapus kontrol yang belum dibooking.
- * - Menandai selesai kunjungan yang merupakan booking kontrol menutup kontrol
- *   itu (done); membatalkannya mengembalikan ke booked.
+ * - Status kontrol mengikuti janji temu kontrolnya: selesai → done, tidak
+ *   datang → pending lagi (perlu booking ulang), kembali menunggu → booked.
  */
 export async function updateDoctorAppointment(
   doctorId: string,
@@ -267,17 +273,12 @@ export async function updateDoctorAppointment(
       }
     }
 
-    // Kunjungan ini sendiri adalah booking kontrol: selesai → kontrol done.
+    // Kunjungan ini sendiri adalah booking kontrol: status kontrol ikut.
     if (changes.status !== undefined)
       await tx
         .update(followUps)
-        .set({ status: nextStatus === "completed" ? "done" : "booked" })
-        .where(
-          and(
-            eq(followUps.bookedAppointmentId, appointmentId),
-            inArray(followUps.status, ["booked", "done"]),
-          ),
-        );
+        .set({ status: FOLLOW_UP_FROM_VISIT[nextStatus] })
+        .where(eq(followUps.bookedAppointmentId, appointmentId));
   });
 
   const [row] = await selectAppointments(own);
