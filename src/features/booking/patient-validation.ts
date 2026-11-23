@@ -5,6 +5,14 @@ export function normalizePhone(phone: string) {
   return phone.replace(/[\s-]/g, "");
 }
 
+/** Simpan nomor dalam satu bentuk (08…) supaya pasien yang sama tidak tercatat dua kali. */
+export function canonicalPhone(phone: string) {
+  const digits = normalizePhone(phone);
+  if (digits.startsWith("+62")) return `0${digits.slice(3)}`;
+  if (digits.startsWith("62")) return `0${digits.slice(2)}`;
+  return digits;
+}
+
 export function nameError(name: string) {
   const trimmed = name.trim();
   if (trimmed.length < 2) return "Isi nama lengkap Anda.";

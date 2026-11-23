@@ -1,4 +1,5 @@
-import { and, asc, between, eq, inArray } from "drizzle-orm";
+import { randomInt } from "node:crypto";
+import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   addDays,
@@ -7,9 +8,14 @@ import {
   fromMinutes,
   toMinutes,
 } from "@/lib/clinic-time";
-import type { AvailabilityQuery } from "@/validators/booking";
+import type {
+  AvailabilityQuery,
+  CreateBookingInput,
+} from "@/validators/booking";
 import {
   appointments,
+  outboxEvents,
+  patients,
   doctorSchedules,
   doctorServices,
   doctors,
@@ -173,4 +179,172 @@ export async function getAvailability(
       return { date, dayOfWeek: dow, slots };
     }),
   };
+}
+
+// --- Simpan janji temu --------------------------------------------------------
+
+export class BookingError extends Error {
+  constructor(
+    public reason:
+      | "service_unavailable"
+      | "doctor_unavailable"
+      | "slot_invalid"
+      | "slot_past"
+      | "slot_taken",
+  ) {
+    super(reason);
+  }
+}
+
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function newBookingCode() {
+  let code = "JK-";
+  for (let i = 0; i < 6; i++)
+    code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return code;
+}
+
+function uniqueViolation(error: unknown): string | null {
+  for (
+    let e: unknown = error;
+    e && typeof e === "object";
+    e = (e as { cause?: unknown }).cause
+  ) {
+    const pg = e as { code?: string; constraint?: string };
+    if (pg.code === "23505") return pg.constraint ?? "";
+  }
+  return null;
+}
+
+// Satu transaksi: cek ulang layanan/dokter/slot, simpan pasien (berdasarkan
+// nomor HP), simpan janji temu, dan tulis event outbox untuk n8n. Unique index
+// dokter+tanggal+jam menolak pemesanan ganda meskipun dua pasien menekan
+// Konfirmasi pada saat yang sama.
+export async function createBooking(
+  input: CreateBookingInput,
+  now = new Date(),
+) {
+  const today = clinicNow(now);
+  const startMinutes = toMinutes(input.time);
+  if (
+    input.date < today.date ||
+    (input.date === today.date && startMinutes <= today.minutes)
+  )
+    throw new BookingError("slot_past");
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await db.transaction(async (tx) => {
+        const [service] = await tx
+          .select({ id: services.id, name: services.name })
+          .from(services)
+          .where(
+            and(eq(services.id, input.serviceId), eq(services.isActive, true)),
+          )
+          .limit(1);
+        if (!service) throw new BookingError("service_unavailable");
+
+        const [doctor] = await tx
+          .select({ id: doctors.id, name: doctors.name })
+          .from(doctors)
+          .innerJoin(doctorServices, eq(doctorServices.doctorId, doctors.id))
+          .where(
+            and(
+              eq(doctors.id, input.doctorId),
+              eq(doctors.isActive, true),
+              eq(doctorServices.serviceId, service.id),
+            ),
+          )
+          .limit(1);
+        if (!doctor) throw new BookingError("doctor_unavailable");
+
+        const schedules = await tx
+          .select({
+            startTime: doctorSchedules.startTime,
+            endTime: doctorSchedules.endTime,
+            slotIntervalMinutes: doctorSchedules.slotIntervalMinutes,
+          })
+          .from(doctorSchedules)
+          .where(
+            and(
+              eq(doctorSchedules.doctorId, doctor.id),
+              eq(doctorSchedules.dayOfWeek, dayOfWeek(input.date)),
+              eq(doctorSchedules.isActive, true),
+            ),
+          );
+        const schedule = schedules.find((s) => {
+          const from = toMinutes(s.startTime);
+          return (
+            startMinutes >= from &&
+            startMinutes < toMinutes(s.endTime) &&
+            (startMinutes - from) % s.slotIntervalMinutes === 0
+          );
+        });
+        if (!schedule) throw new BookingError("slot_invalid");
+        const endTime = fromMinutes(
+          startMinutes + schedule.slotIntervalMinutes,
+        );
+
+        const [patient] = await tx
+          .insert(patients)
+          .values({ name: input.name, phone: input.phone })
+          .onConflictDoUpdate({
+            target: patients.phone,
+            set: { name: input.name, updatedAt: sql`now()` },
+          })
+          .returning({
+            id: patients.id,
+            name: patients.name,
+            phone: patients.phone,
+          });
+
+        const [appointment] = await tx
+          .insert(appointments)
+          .values({
+            code: newBookingCode(),
+            patientId: patient.id,
+            doctorId: doctor.id,
+            serviceId: service.id,
+            appointmentDate: input.date,
+            startTime: input.time,
+            endTime,
+          })
+          .returning({
+            id: appointments.id,
+            code: appointments.code,
+            date: appointments.appointmentDate,
+            startTime: appointments.startTime,
+            endTime: appointments.endTime,
+          });
+
+        const booking = {
+          code: appointment.code,
+          date: appointment.date,
+          time: appointment.startTime.slice(0, 5),
+          endTime: appointment.endTime.slice(0, 5),
+          serviceName: service.name,
+          doctorName: doctor.name,
+          patientName: patient.name,
+          patientPhone: patient.phone,
+        };
+
+        await tx.insert(outboxEvents).values({
+          eventType: "appointment_created",
+          appointmentId: appointment.id,
+          payload: { appointmentId: appointment.id, ...booking },
+        });
+
+        return booking;
+      });
+    } catch (error) {
+      const constraint = uniqueViolation(error);
+      if (constraint === "appointments_doctor_date_start_idx")
+        throw new BookingError("slot_taken");
+      // Kode booking acak bentrok (sangat jarang): coba lagi dengan kode baru.
+      if (constraint === "appointments_code_unique") continue;
+      throw error;
+    }
+  }
+  throw new Error("Could not allocate a unique booking code.");
 }
