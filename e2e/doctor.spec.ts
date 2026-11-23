@@ -109,12 +109,16 @@ async function signUp(client: APIRequestContext) {
   return data.email;
 }
 
+// Sama seperti admin menautkan akun di Kelola klinik: tautan + peran dokter.
 async function linkDoctor(email: string, doctorId: string) {
   const { rowCount } = await pool.query(
     'UPDATE doctors SET user_id = (SELECT id FROM "user" WHERE email = $1) WHERE id = $2',
     [email, doctorId],
   );
   expect(rowCount).toBe(1);
+  await pool.query(`UPDATE "user" SET role = 'dokter' WHERE email = $1`, [
+    email,
+  ]);
 }
 
 test("dokter hanya melihat dan mengubah janji temunya sendiri", async () => {

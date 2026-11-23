@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { withApiSession } from "@/lib/api.server";
+import { withApiPermission } from "@/lib/api.server";
 import { clinicNow } from "@/lib/clinic-time";
-import { requireClinicStaff } from "@/lib/staff.server";
-import { listFollowUps } from "@/services/follow-up.service.server";
+import { listFollowUpsAny } from "@/services/follow-up.service.server";
 
 // GET /api/follow-ups → { today, followUps }
 // Semua jadwal kontrol yang masih berjalan (dan yang selesai 90 hari terakhir)
@@ -11,11 +10,10 @@ export const Route = createFileRoute("/api/follow-ups/")({
   server: {
     handlers: {
       GET: ({ request }) =>
-        withApiSession(request, async (session) => {
-          await requireClinicStaff(session.user);
+        withApiPermission(request, { followUps: ["read-any"] }, async () => {
           const today = clinicNow().date;
           return Response.json({
-            data: { today, followUps: await listFollowUps(today) },
+            data: { today, followUps: await listFollowUpsAny(today) },
           });
         }),
     },

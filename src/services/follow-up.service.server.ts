@@ -70,7 +70,7 @@ const hhmm = (time: string) => time.slice(0, 5);
  * tanggal kontrol yang ditetapkan, plus semua data kontrolnya. Nomor HP
  * disamarkan.
  */
-export async function getPatientHistory(patientId: string) {
+export async function getPatientHistoryAny(patientId: string) {
   const [patient] = await db
     .select({ id: patients.id, name: patients.name, phone: patients.phone })
     .from(patients)
@@ -113,7 +113,7 @@ export async function getPatientHistory(patientId: string) {
 }
 
 export type PatientHistory = NonNullable<
-  Awaited<ReturnType<typeof getPatientHistory>>
+  Awaited<ReturnType<typeof getPatientHistoryAny>>
 >;
 
 /**
@@ -121,7 +121,7 @@ export type PatientHistory = NonNullable<
  * jatuh tempo paling awal. Nomor HP utuh karena staf perlu menghubungi pasien
  * yang belum booking. Kontrol selesai hanya yang 90 hari terakhir.
  */
-export async function listFollowUps(today: string) {
+export async function listFollowUpsAny(today: string) {
   const rows = await selectFollowUps()
     .where(
       sql`${followUps.status} <> 'done' or ${followUps.dueDate} >= (${today}::date - 90)`,

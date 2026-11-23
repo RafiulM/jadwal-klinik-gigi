@@ -64,6 +64,13 @@
       "when": 1795434053830,
       "tag": "0008_kelola_klinik",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795435048490,
+      "tag": "0009_staff_roles",
+      "breakpoints": true
     }
   ]
 }

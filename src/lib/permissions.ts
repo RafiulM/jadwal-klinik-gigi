@@ -13,6 +13,10 @@ export const statement = {
   schedule: ["read-any"],
   // Kelola klinik: layanan, dokter, dan jam praktik.
   clinic: ["manage"],
+  // Kontrol pasien & riwayat kunjungan pasien mana pun.
+  followUps: ["read-any"],
+  // Rekap harian dan unduh laporan untuk pemilik klinik.
+  reports: ["read"],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -26,7 +30,13 @@ export const roles = {
     notes: ["read-any", "delete-any"],
     schedule: ["read-any"],
     clinic: ["manage"],
+    followUps: ["read-any"],
   }),
+  // Dokter melihat jadwalnya sendiri lewat tautan doctors.user_id; peran ini
+  // menambah akses kontrol & riwayat pasien klinik.
+  dokter: ac.newRole({ followUps: ["read-any"] }),
+  // Pemilik melihat papan jadwal dan rekap, tanpa mengubah data klinik.
+  pemilik: ac.newRole({ schedule: ["read-any"], reports: ["read"] }),
 } as const;
 
 export type AppRole = keyof typeof roles;

@@ -187,6 +187,34 @@ async function replaceServices(tx: Tx, doctorId: string, serviceIds: string[]) {
     .values(serviceIds.map((serviceId) => ({ doctorId, serviceId })));
 }
 
+/**
+ * Peran "dokter" mengikuti tautan doctors.user_id: akun yang ditautkan
+ * mendapat peran itu, akun yang dilepas kehilangan peran itu bila tidak lagi
+ * tertaut ke dokter mana pun. Peran lain (admin, pemilik) tidak diubah.
+ */
+async function syncDoctorRole(tx: Tx, userIds: (string | null)[]) {
+  for (const userId of new Set(userIds.filter(Boolean) as string[])) {
+    const [linked] = await tx
+      .select({ total: count() })
+      .from(doctors)
+      .where(eq(doctors.userId, userId));
+    const [account] = await tx
+      .select({ role: user.role })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
+    if (!account) continue;
+    const roles = (account.role ?? "")
+      .split(",")
+      .map((r) => r.trim())
+      .filter((r) => r && r !== "user" && r !== "dokter");
+    if ((linked?.total ?? 0) > 0) roles.push("dokter");
+    const next = roles.length ? roles.join(",") : null;
+    if (next !== account.role)
+      await tx.update(user).set({ role: next }).where(eq(user.id, userId));
+  }
+}
+
 function rethrowDoctor(error: unknown): never {
   if (error instanceof ClinicError) throw error;
   if (uniqueViolation(error) === "doctors_user_id_unique")
@@ -198,16 +226,18 @@ function rethrowDoctor(error: unknown): never {
 export async function createDoctorAny(input: CreateDoctorInput) {
   try {
     const id = await db.transaction(async (tx) => {
+      const userId = await accountIdFor(tx, input.accountEmail);
       const [created] = await tx
         .insert(doctors)
         .values({
           name: input.name,
           specialization: input.specialization,
           phone: input.phone,
-          userId: await accountIdFor(tx, input.accountEmail),
+          userId,
         })
         .returning({ id: doctors.id });
       await replaceServices(tx, created.id, input.serviceIds);
+      await syncDoctorRole(tx, [userId]);
       return created.id;
     });
     return (await getDoctorAny(id))!;
@@ -219,6 +249,13 @@ export async function createDoctorAny(input: CreateDoctorInput) {
 export async function updateDoctorAny(id: string, input: UpdateDoctorInput) {
   try {
     await db.transaction(async (tx) => {
+      const [before] = await tx
+        .select({ userId: doctors.userId })
+        .from(doctors)
+        .where(eq(doctors.id, id))
+        .for("update")
+        .limit(1);
+      if (!before) throw new ClinicError("NOT_FOUND");
       const [updated] = await tx
         .update(doctors)
         .set({
@@ -231,9 +268,10 @@ export async function updateDoctorAny(id: string, input: UpdateDoctorInput) {
             : {}),
         })
         .where(eq(doctors.id, id))
-        .returning({ id: doctors.id });
+        .returning({ id: doctors.id, userId: doctors.userId });
       if (!updated) throw new ClinicError("NOT_FOUND");
       if (input.serviceIds) await replaceServices(tx, id, input.serviceIds);
+      await syncDoctorRole(tx, [before.userId, updated.userId]);
     });
     return (await getDoctorAny(id))!;
   } catch (error) {
@@ -255,11 +293,14 @@ export async function deleteDoctorAny(id: string) {
   ]);
   if ((used?.total ?? 0) + (planned?.total ?? 0) > 0)
     throw new ClinicError("DOCTOR_IN_USE");
-  const deleted = await db
-    .delete(doctors)
-    .where(eq(doctors.id, id))
-    .returning({ id: doctors.id });
-  if (!deleted.length) throw new ClinicError("NOT_FOUND");
+  await db.transaction(async (tx) => {
+    const deleted = await tx
+      .delete(doctors)
+      .where(eq(doctors.id, id))
+      .returning({ id: doctors.id, userId: doctors.userId });
+    if (!deleted.length) throw new ClinicError("NOT_FOUND");
+    await syncDoctorRole(tx, [deleted[0].userId]);
+  });
 }
 
 // ---------------------------------------------------------- Jam praktik
