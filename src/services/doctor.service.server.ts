@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   appointments,
@@ -7,8 +7,9 @@ import {
   patients,
   services,
 } from "@/db/schema";
-import { dayOfWeek } from "@/lib/clinic-time";
+import { clinicNow, dayOfWeek } from "@/lib/clinic-time";
 import { maskPhone } from "@/lib/phone";
+import type { UpdateAppointmentInput } from "@/validators/doctor";
 
 // Data dokter yang login. Akun staf ditautkan ke baris `doctors` lewat user_id;
 // semua query di bawah memakai doctorId hasil tautan itu, bukan input klien.
@@ -24,27 +25,8 @@ export async function findDoctorByUserId(userId: string) {
 
 const hhmm = (time: string) => time.slice(0, 5);
 
-/** Jadwal satu hari untuk satu dokter: jam praktik + janji temu urut jam. */
-export async function getDoctorDay(
-  doctor: { id: string; name: string },
-  date: string,
-) {
-  const blocks = await db
-    .select({
-      startTime: doctorSchedules.startTime,
-      endTime: doctorSchedules.endTime,
-    })
-    .from(doctorSchedules)
-    .where(
-      and(
-        eq(doctorSchedules.doctorId, doctor.id),
-        eq(doctorSchedules.dayOfWeek, dayOfWeek(date)),
-        eq(doctorSchedules.isActive, true),
-      ),
-    )
-    .orderBy(asc(doctorSchedules.startTime));
-
-  const rows = await db
+function selectAppointments(where: SQL | undefined) {
+  return db
     .select({
       id: appointments.id,
       code: appointments.code,
@@ -69,13 +51,61 @@ export async function getDoctorDay(
     .from(appointments)
     .innerJoin(patients, eq(patients.id, appointments.patientId))
     .innerJoin(services, eq(services.id, appointments.serviceId))
+    .where(where)
+    .orderBy(asc(appointments.startTime));
+}
+
+type AppointmentRow = Awaited<ReturnType<typeof selectAppointments>>[number];
+
+function toAppointment(row: AppointmentRow) {
+  return {
+    id: row.id,
+    code: row.code,
+    time: hhmm(row.startTime),
+    endTime: hhmm(row.endTime),
+    status: row.status,
+    notes: row.notes ?? "",
+    followUpDate: "",
+    service: {
+      id: row.serviceId,
+      name: row.serviceName,
+      followUpDays: row.followUpDays,
+    },
+    patient: {
+      id: row.patientId,
+      name: row.patientName,
+      phone: maskPhone(row.patientPhone),
+      firstVisit: Boolean(row.firstVisit),
+    },
+  };
+}
+
+/** Jadwal satu hari untuk satu dokter: jam praktik + janji temu urut jam. */
+export async function getDoctorDay(
+  doctor: { id: string; name: string },
+  date: string,
+) {
+  const blocks = await db
+    .select({
+      startTime: doctorSchedules.startTime,
+      endTime: doctorSchedules.endTime,
+    })
+    .from(doctorSchedules)
     .where(
       and(
-        eq(appointments.doctorId, doctor.id),
-        eq(appointments.appointmentDate, date),
+        eq(doctorSchedules.doctorId, doctor.id),
+        eq(doctorSchedules.dayOfWeek, dayOfWeek(date)),
+        eq(doctorSchedules.isActive, true),
       ),
     )
-    .orderBy(asc(appointments.startTime));
+    .orderBy(asc(doctorSchedules.startTime));
+
+  const rows = await selectAppointments(
+    and(
+      eq(appointments.doctorId, doctor.id),
+      eq(appointments.appointmentDate, date),
+    ),
+  );
 
   return {
     date,
@@ -89,27 +119,57 @@ export async function getDoctorDay(
           }
         : null,
     },
-    appointments: rows.map((row) => ({
-      id: row.id,
-      code: row.code,
-      time: hhmm(row.startTime),
-      endTime: hhmm(row.endTime),
-      status: row.status,
-      notes: row.notes ?? "",
-      followUpDate: "",
-      service: {
-        id: row.serviceId,
-        name: row.serviceName,
-        followUpDays: row.followUpDays,
-      },
-      patient: {
-        id: row.patientId,
-        name: row.patientName,
-        phone: maskPhone(row.patientPhone),
-        firstVisit: Boolean(row.firstVisit),
-      },
-    })),
+    appointments: rows.map(toAppointment),
   };
 }
 
 export type DoctorDay = Awaited<ReturnType<typeof getDoctorDay>>;
+
+export class AppointmentUpdateError extends Error {
+  constructor(public reason: "NOT_FOUND" | "NOT_STARTED") {
+    super(reason);
+  }
+}
+
+/**
+ * Dokter menandai hasil kunjungan miliknya: selesai, tidak datang, atau
+ * dikembalikan ke menunggu; sekaligus menyimpan catatan. Kunjungan di masa
+ * depan tidak bisa ditandai selesai/tidak datang.
+ */
+export async function updateDoctorAppointment(
+  doctorId: string,
+  userId: string,
+  appointmentId: string,
+  input: UpdateAppointmentInput,
+) {
+  const own = and(
+    eq(appointments.id, appointmentId),
+    eq(appointments.doctorId, doctorId),
+  );
+  const [current] = await db
+    .select({
+      date: appointments.appointmentDate,
+      status: appointments.status,
+    })
+    .from(appointments)
+    .where(own)
+    .limit(1);
+  if (!current) throw new AppointmentUpdateError("NOT_FOUND");
+
+  const changes: Partial<typeof appointments.$inferInsert> = {};
+  if (input.status !== undefined && input.status !== current.status) {
+    if (input.status !== "scheduled" && current.date > clinicNow().date)
+      throw new AppointmentUpdateError("NOT_STARTED");
+    changes.status = input.status;
+    changes.completedAt = input.status === "completed" ? new Date() : null;
+    changes.statusChangedAt = new Date();
+    changes.statusChangedBy = userId;
+  }
+  if (input.notes !== undefined) changes.notes = input.notes || null;
+
+  if (Object.keys(changes).length)
+    await db.update(appointments).set(changes).where(own);
+
+  const [row] = await selectAppointments(own);
+  return toAppointment(row);
+}

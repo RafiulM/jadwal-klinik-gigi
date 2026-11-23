@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isoDate } from "./common";
+import { isoDate, uuid } from "./common";
 
 // GET /api/doctor/today — tanggal opsional, default hari ini (zona klinik).
 export const doctorDayQuerySchema = z
@@ -7,3 +7,22 @@ export const doctorDayQuerySchema = z
   .strict();
 
 export type DoctorDayQuery = z.infer<typeof doctorDayQuerySchema>;
+
+export const appointmentIdSchema = uuid;
+
+// PATCH /api/doctor/appointments/:id — tandai hasil kunjungan dan/atau catatan.
+export const updateAppointmentSchema = z
+  .object({
+    status: z.enum(["scheduled", "completed", "no_show"]).optional(),
+    notes: z
+      .string()
+      .trim()
+      .max(2000, "Catatan maksimal 2000 karakter.")
+      .optional(),
+  })
+  .strict()
+  .refine((value) => value.status !== undefined || value.notes !== undefined, {
+    message: "Kirim status atau catatan.",
+  });
+
+export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
