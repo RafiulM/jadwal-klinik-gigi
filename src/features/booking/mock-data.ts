@@ -161,3 +161,20 @@ export function dayInfo(doctor: Doctor, date: BookingDate, lost: string[]) {
     ? ({ open: false, label: "Penuh" } as const)
     : ({ open: true, label: `${free} kosong` } as const);
 }
+
+export function bookingCode(dateId: string, time: string) {
+  return `JK-${dateId.slice(8, 10)}${dateId.slice(5, 7)}-${time.replace(".", "")}`;
+}
+
+/** Simulasi POST /api/booking sampai API asli tersedia. */
+export function submitBookingMock(input: {
+  doctorId: string;
+  dateId: string;
+  time: string;
+}): Promise<{ ok: true; code: string } | { ok: false; reason: "slot_taken" }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ ok: true, code: bookingCode(input.dateId, input.time) });
+    }, 900);
+  });
+}

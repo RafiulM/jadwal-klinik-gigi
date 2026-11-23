@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarCheck,
   CalendarClock,
   CircleCheck,
   IdCard,
+  LoaderCircle,
   LogIn,
   ShieldCheck,
   Stethoscope,
@@ -19,14 +21,17 @@ import {
   SERVICES,
   buildSlots,
   dayInfo,
+  submitBookingMock,
   takenFor,
 } from "./mock-data";
-import { StepHeading } from "./step-heading";
+import { nameError, phoneError } from "./patient-validation";
+import { BookingSuccess } from "./booking-success";
+import { StepConfirm } from "./step-confirm";
 import { StepDoctor } from "./step-doctor";
 import { StepPatient } from "./step-patient";
 import { StepSchedule } from "./step-schedule";
-import { nameError, phoneError } from "./patient-validation";
 import { StepService } from "./step-service";
+import { SummaryList } from "./summary-list";
 
 export const STEPS = [
   { id: "layanan", label: "Layanan" },
@@ -54,44 +59,71 @@ const EMPTY: BookingState = {
   phone: "",
 };
 
+type SubmitStatus = "idle" | "submitting" | "done";
+
+const cardShadow =
+  "shadow-[0_1px_2px_rgb(27_36_33/0.06),0_12px_32px_rgb(27_36_33/0.08)]";
+
 export function BookingPage() {
   const [step, setStep] = useState(0);
   const [booking, setBooking] = useState<BookingState>(EMPTY);
-  // Slot yang keburu diambil pasien lain saat konfirmasi (dipakai di langkah konfirmasi).
+  const [touched, setTouched] = useState({ name: false, phone: false });
+  const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [code, setCode] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Slot yang keburu diambil pasien lain saat konfirmasi.
   const [lostSlots] = useState<string[]>([]);
   const [conflictTime, setConflictTime] = useState<string | null>(null);
-  const [touched, setTouched] = useState({ name: false, phone: false });
+
   const headingRef = useRef<HTMLHeadingElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const lastStepRef = useRef(step);
+  const isDone = status === "done";
+  const viewKeyRef = useRef(`${step}|${isDone}`);
 
   // Pindahkan fokus ke judul langkah saat berganti langkah (bukan saat muat awal).
   useEffect(() => {
-    if (lastStepRef.current === step) return;
-    lastStepRef.current = step;
+    const key = `${step}|${isDone}`;
+    if (viewKeyRef.current === key) return;
+    viewKeyRef.current = key;
     headingRef.current?.focus();
-  }, [step]);
+  }, [step, isDone]);
 
   const service = SERVICES.find((s) => s.id === booking.serviceId);
   const doctor = DOCTORS.find((d) => d.id === booking.doctorId);
   const date = DATES.find((d) => d.id === booking.dateId);
+  const doctorsForService = booking.serviceId
+    ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
+    : [];
+  const days = doctor
+    ? DATES.map((d) => ({ ...d, ...dayInfo(doctor, d, lostSlots) }))
+    : [];
+  const slots = doctor ? buildSlots(doctor.startHour, doctor.endHour) : [];
+  const takenSlots =
+    doctor && date ? takenFor(doctor.id, date.id, lostSlots) : [];
 
-  const summary: SummaryRow[] = [
-    { id: "layanan", label: "Layanan", icon: <Stethoscope />, value: service?.name ?? "" },
-    { id: "dokter", label: "Dokter", icon: <UserRound />, value: doctor?.name ?? "" },
+  const nameProblem = nameError(booking.name);
+  const phoneProblem = phoneError(booking.phone);
+  const trimmedName = booking.name.trim();
+  const trimmedPhone = booking.phone.trim();
+
+  const summary = [
+    { id: "layanan", step: 0, label: "Layanan", icon: <Stethoscope />, value: service?.name ?? "" },
+    { id: "dokter", step: 1, label: "Dokter", icon: <UserRound />, value: doctor?.name ?? "" },
     {
       id: "jadwal",
+      step: 2,
       label: "Jadwal",
       icon: <CalendarClock />,
       value: date && booking.time ? `${date.long}, pukul ${booking.time}` : "",
     },
     {
       id: "pasien",
+      step: 3,
       label: "Atas nama",
       icon: <IdCard />,
-      value: booking.name.trim()
-        ? `${booking.name.trim()}${booking.phone.trim() ? ` · ${booking.phone.trim()}` : ""}`
+      value: trimmedName
+        ? `${trimmedName}${trimmedPhone ? ` · ${trimmedPhone}` : ""}`
         : "",
     },
   ];
@@ -108,16 +140,12 @@ export function BookingPage() {
 
   function chooseDoctor(id: string) {
     setBooking((prev) =>
-      prev.doctorId === id
-        ? prev
-        : { ...prev, doctorId: id, dateId: null, time: null },
+      prev.doctorId === id ? prev : { ...prev, doctorId: id, dateId: null, time: null },
     );
   }
 
   function chooseDate(id: string) {
-    setBooking((prev) =>
-      prev.dateId === id ? prev : { ...prev, dateId: id, time: null },
-    );
+    setBooking((prev) => (prev.dateId === id ? prev : { ...prev, dateId: id, time: null }));
   }
 
   function chooseTime(time: string) {
@@ -125,15 +153,27 @@ export function BookingPage() {
     setConflictTime(null);
   }
 
-  const days = doctor
-    ? DATES.map((d) => ({ ...d, ...dayInfo(doctor, d, lostSlots) }))
-    : [];
-  const slots = doctor ? buildSlots(doctor.startHour, doctor.endHour) : [];
-  const takenSlots =
-    doctor && date ? takenFor(doctor.id, date.id, lostSlots) : [];
-
-  const nameProblem = nameError(booking.name);
-  const phoneProblem = phoneError(booking.phone);
+  async function submit() {
+    if (status === "submitting" || !booking.doctorId || !booking.dateId || !booking.time) return;
+    setStatus("submitting");
+    setSubmitError(null);
+    try {
+      const result = await submitBookingMock({
+        doctorId: booking.doctorId,
+        dateId: booking.dateId,
+        time: booking.time,
+      });
+      if (result.ok) {
+        setCode(result.code);
+        setStatus("done");
+        return;
+      }
+      setStatus("idle");
+    } catch {
+      setStatus("idle");
+      setSubmitError("Janji temu belum tersimpan karena gangguan koneksi. Coba lagi sebentar.");
+    }
+  }
 
   function goNext() {
     if (step === 3) {
@@ -141,12 +181,24 @@ export function BookingPage() {
       if (nameProblem) return nameRef.current?.focus();
       if (phoneProblem) return phoneRef.current?.focus();
     }
+    if (step === 4) return void submit();
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
   }
 
-  const doctorsForService = booking.serviceId
-    ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
-    : [];
+  function goBack() {
+    if (status === "submitting") return;
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  function resetAll() {
+    setBooking(EMPTY);
+    setTouched({ name: false, phone: false });
+    setConflictTime(null);
+    setSubmitError(null);
+    setCode("");
+    setStatus("idle");
+    setStep(0);
+  }
 
   const canNext =
     step === 0
@@ -165,91 +217,108 @@ export function BookingPage() {
 
   return (
     <div className="min-h-svh bg-background">
-      <BookingHero />
+      <BookingHero showIntro={!isDone} />
 
-      <main
-        id="main-content"
-        className="relative z-10 -mt-16 px-3 pb-10 md:px-8 md:pb-16"
-      >
-        <div className="mx-auto grid max-w-[640px] gap-6 lg:max-w-[1040px] lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
-          <section
-            aria-label="Formulir booking"
-            className="grid min-w-0 gap-6 rounded-xl border bg-card px-4 pt-5 shadow-[0_1px_2px_rgb(27_36_33/0.06),0_12px_32px_rgb(27_36_33/0.08)] md:p-8"
-          >
-            <Stepper current={step} />
+      <main id="main-content" className="relative z-10 -mt-16 px-3 pb-10 md:px-8 md:pb-16">
+        {isDone ? (
+          <BookingSuccess
+            code={code}
+            rows={summary}
+            phone={trimmedPhone}
+            onReset={resetAll}
+            headingRef={headingRef}
+          />
+        ) : (
+          <div className="mx-auto grid max-w-[640px] gap-6 lg:max-w-[1040px] lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
+            <section
+              aria-label="Formulir booking"
+              className={cn("grid min-w-0 gap-6 rounded-xl border bg-card px-4 pt-5 md:p-8", cardShadow)}
+            >
+              <Stepper current={step} />
 
-            {step === 0 ? (
-              <StepService
-                services={SERVICES}
-                selectedId={booking.serviceId}
-                onSelect={chooseService}
-                headingRef={headingRef}
-              />
-            ) : step === 1 ? (
-              <StepDoctor
-                doctors={doctorsForService}
-                serviceName={service?.name ?? null}
-                selectedId={booking.doctorId}
-                onSelect={chooseDoctor}
-                headingRef={headingRef}
-              />
-            ) : step === 2 && doctor ? (
-              <StepSchedule
-                doctorName={doctor.name}
-                days={days}
-                selectedDateId={booking.dateId}
-                onSelectDate={chooseDate}
-                slots={slots}
-                takenSlots={takenSlots}
-                selectedTime={booking.time}
-                onSelectTime={chooseTime}
-                conflictTime={conflictTime}
-                headingRef={headingRef}
-              />
-            ) : step === 3 ? (
-              <StepPatient
-                name={booking.name}
-                phone={booking.phone}
-                nameError={touched.name ? nameProblem : ""}
-                phoneError={touched.phone ? phoneProblem : ""}
-                onName={(name) => setBooking((prev) => ({ ...prev, name }))}
-                onPhone={(phone) => setBooking((prev) => ({ ...prev, phone }))}
-                onBlurName={() => setTouched((t) => ({ ...t, name: true }))}
-                onBlurPhone={() => setTouched((t) => ({ ...t, phone: true }))}
-                nameRef={nameRef}
-                phoneRef={phoneRef}
-                headingRef={headingRef}
-              />
-            ) : (
-              <StepPlaceholder headingRef={headingRef} step={step} />
-            )}
+              {step === 0 ? (
+                <StepService
+                  services={SERVICES}
+                  selectedId={booking.serviceId}
+                  onSelect={chooseService}
+                  headingRef={headingRef}
+                />
+              ) : null}
+              {step === 1 ? (
+                <StepDoctor
+                  doctors={doctorsForService}
+                  serviceName={service?.name ?? null}
+                  selectedId={booking.doctorId}
+                  onSelect={chooseDoctor}
+                  headingRef={headingRef}
+                />
+              ) : null}
+              {step === 2 && doctor ? (
+                <StepSchedule
+                  doctorName={doctor.name}
+                  days={days}
+                  selectedDateId={booking.dateId}
+                  onSelectDate={chooseDate}
+                  slots={slots}
+                  takenSlots={takenSlots}
+                  selectedTime={booking.time}
+                  onSelectTime={chooseTime}
+                  conflictTime={conflictTime}
+                  headingRef={headingRef}
+                />
+              ) : null}
+              {step === 3 ? (
+                <StepPatient
+                  name={booking.name}
+                  phone={booking.phone}
+                  nameError={touched.name ? nameProblem : ""}
+                  phoneError={touched.phone ? phoneProblem : ""}
+                  onName={(name) => setBooking((prev) => ({ ...prev, name }))}
+                  onPhone={(phone) => setBooking((prev) => ({ ...prev, phone }))}
+                  onBlurName={() => setTouched((t) => ({ ...t, name: true }))}
+                  onBlurPhone={() => setTouched((t) => ({ ...t, phone: true }))}
+                  nameRef={nameRef}
+                  phoneRef={phoneRef}
+                  headingRef={headingRef}
+                />
+              ) : null}
+              {step === 4 ? (
+                <StepConfirm
+                  rows={summary}
+                  onEdit={(target) => setStep(target)}
+                  error={submitError}
+                  headingRef={headingRef}
+                />
+              ) : null}
 
-            <WizardActions
-              step={step}
-              canNext={canNext}
-              hint={hint}
-              onBack={() => setStep((s) => Math.max(0, s - 1))}
-              onNext={goNext}
-            />
-          </section>
+              <WizardActions
+                step={step}
+                canNext={canNext}
+                hint={hint}
+                submitting={status === "submitting"}
+                onBack={goBack}
+                onNext={goNext}
+              />
+            </section>
 
-          <aside aria-label="Ringkasan janji" className="hidden lg:sticky lg:top-6 lg:block">
-            <div className="grid gap-2 rounded-xl border bg-card p-5 shadow-[0_1px_2px_rgb(27_36_33/0.06),0_12px_32px_rgb(27_36_33/0.08)]">
-              <h2 className="text-base font-bold">Ringkasan janji</h2>
-              <SummaryList rows={summary} />
-              <p className="flex gap-2 rounded-md bg-primary-50 p-3 text-xs text-muted-foreground">
-                <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                <span>Jam yang tampil hanya jam yang masih kosong, jadi tidak akan bentrok.</span>
-              </p>
-            </div>
-          </aside>
-        </div>
+            <aside aria-label="Ringkasan janji" className="hidden lg:sticky lg:top-6 lg:block">
+              <div className={cn("grid gap-2 rounded-xl border bg-card p-5", cardShadow)}>
+                <h2 className="text-base font-bold">Ringkasan janji</h2>
+                <SummaryList rows={summary} />
+                <p className="flex gap-2 rounded-md bg-primary-50 p-3 text-xs text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span>Jam yang tampil hanya jam yang masih kosong, jadi tidak akan bentrok.</span>
+                </p>
+              </div>
+            </aside>
+          </div>
+        )}
       </main>
     </div>
   );
 }
 
-function BookingHero() {
+function BookingHero({ showIntro }: { showIntro: boolean }) {
   return (
     <header className="bg-brand-deep px-4 pt-4 pb-20 text-on-brand-deep md:px-8 md:pt-5 md:pb-26">
       <div className="mx-auto grid max-w-[640px] gap-8 lg:max-w-[1040px]">
@@ -266,21 +335,23 @@ function BookingHero() {
             Masuk staf
           </Link>
         </div>
-        <div className="grid max-w-[640px] gap-4">
-          <h1 className="text-2xl leading-tight font-bold tracking-tight md:text-[34px]">
-            Buat janji temu dalam 2 menit
-          </h1>
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            {["Tanpa daftar akun", "Hanya jam yang masih kosong", "Pengingat jadwal ke WhatsApp"].map(
-              (item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <CircleCheck className="size-4 text-on-brand-deep-muted" aria-hidden="true" />
-                  <span>{item}</span>
-                </li>
-              ),
-            )}
-          </ul>
-        </div>
+        {showIntro ? (
+          <div className="grid max-w-[640px] gap-4">
+            <h1 className="text-2xl leading-tight font-bold tracking-tight md:text-[34px]">
+              Buat janji temu dalam 2 menit
+            </h1>
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              {["Tanpa daftar akun", "Hanya jam yang masih kosong", "Pengingat jadwal ke WhatsApp"].map(
+                (item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CircleCheck className="size-4 text-on-brand-deep-muted" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </header>
   );
@@ -333,35 +404,22 @@ function Stepper({ current }: { current: number }) {
   );
 }
 
-function StepPlaceholder({
-  headingRef,
-  step,
-}: {
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
-  step: number;
-}) {
-  return (
-    <StepHeading
-      headingRef={headingRef}
-      title={STEPS[step].label}
-      lead="Bagian ini sedang disiapkan."
-    />
-  );
-}
-
 function WizardActions({
   step,
   canNext,
   hint,
+  submitting,
   onBack,
   onNext,
 }: {
   step: number;
   canNext: boolean;
   hint: string;
+  submitting: boolean;
   onBack: () => void;
   onNext: () => void;
 }) {
+  const isLast = step === STEPS.length - 1;
   return (
     <div className="sticky bottom-0 z-10 -mx-4 grid gap-2 rounded-b-xl border-t bg-card px-4 py-3 shadow-[0_-8px_24px_rgb(27_36_33/0.08)] md:static md:mx-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:rounded-none md:px-0 md:pt-5 md:pb-0 md:shadow-none">
       <p aria-live="polite" className="text-sm text-muted-foreground empty:hidden">
@@ -369,21 +427,38 @@ function WizardActions({
       </p>
       <div className="flex gap-3 md:col-start-2">
         {step > 0 ? (
-          <WizardButton variant="secondary" onClick={onBack}>
+          <WizardButton variant="secondary" onClick={onBack} disabled={submitting}>
             <ArrowLeft aria-hidden="true" />
             Kembali
           </WizardButton>
         ) : null}
-        <WizardButton variant="primary" onClick={onNext} disabled={!canNext}>
-          Lanjut
-          <ArrowRight aria-hidden="true" />
-        </WizardButton>
+        {isLast ? (
+          <WizardButton
+            variant="primary"
+            onClick={onNext}
+            aria-busy={submitting}
+            aria-disabled={submitting || undefined}
+            className={submitting ? "cursor-progress" : undefined}
+          >
+            {submitting ? (
+              <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            ) : (
+              <CalendarCheck aria-hidden="true" />
+            )}
+            {submitting ? "Menyimpan…" : "Konfirmasi janji"}
+          </WizardButton>
+        ) : (
+          <WizardButton variant="primary" onClick={onNext} disabled={!canNext}>
+            Lanjut
+            <ArrowRight aria-hidden="true" />
+          </WizardButton>
+        )}
       </div>
     </div>
   );
 }
 
-export function WizardButton({
+function WizardButton({
   variant,
   className,
   ...props
@@ -400,61 +475,5 @@ export function WizardButton({
       )}
       {...props}
     />
-  );
-}
-
-type SummaryRow = { id: string; label: string; icon: ReactNode; value: string };
-
-export function SummaryList({
-  rows,
-  onEdit,
-}: {
-  rows: (SummaryRow & { step?: number })[];
-  onEdit?: (step: number) => void;
-}) {
-  return (
-    <dl className="grid">
-      {rows.map((row, i) => (
-        <div
-          key={row.id}
-          className={cn(
-            "grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-3 py-3",
-            i > 0 && "border-t",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className="inline-flex size-10 items-center justify-center rounded-md bg-primary-50 text-primary [&_svg]:size-[18px]"
-          >
-            {row.icon}
-          </span>
-          <div className="grid min-w-0 gap-1">
-            <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {row.label}
-            </dt>
-            <dd className="flex items-baseline justify-between gap-3">
-              <span
-                className={cn(
-                  "min-w-0 text-base leading-snug [overflow-wrap:anywhere]",
-                  row.value ? "font-semibold" : "text-muted-foreground",
-                )}
-              >
-                {row.value || "Belum dipilih"}
-              </span>
-              {onEdit && row.step !== undefined ? (
-                <button
-                  type="button"
-                  onClick={() => onEdit(row.step!)}
-                  aria-label={`Ubah ${row.label.toLowerCase()}`}
-                  className="shrink-0 rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  Ubah
-                </button>
-              ) : null}
-            </dd>
-          </div>
-        </div>
-      ))}
-    </dl>
   );
 }
