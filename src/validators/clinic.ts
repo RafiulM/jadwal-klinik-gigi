@@ -99,3 +99,36 @@ export const updateDoctorSchema = z
 
 export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;
 export type UpdateDoctorInput = z.infer<typeof updateDoctorSchema>;
+
+const hhmm = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Gunakan jam HH:MM.");
+
+// PUT /api/admin/doctors/:id/schedule — jam praktik mingguan, satu blok per hari.
+export const doctorScheduleSchema = z
+  .object({
+    slotIntervalMinutes: z.number().int().min(5).max(240),
+    days: z
+      .array(
+        z
+          .object({
+            dayOfWeek: z.number().int().min(0).max(6),
+            open: z.boolean(),
+            start: hhmm,
+            end: hhmm,
+          })
+          .strict()
+          .refine((day) => !day.open || day.end > day.start, {
+            message: "Jam selesai harus setelah jam mulai.",
+            path: ["end"],
+          }),
+      )
+      .length(7, "Kirim ketujuh hari.")
+      .refine(
+        (days) => new Set(days.map((d) => d.dayOfWeek)).size === 7,
+        "Setiap hari hanya boleh muncul sekali.",
+      ),
+  })
+  .strict();
+
+export type DoctorScheduleInput = z.infer<typeof doctorScheduleSchema>;

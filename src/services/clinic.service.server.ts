@@ -1,7 +1,8 @@
-import { asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   appointments,
+  doctorSchedules,
   doctorServices,
   doctors,
   followUps,
@@ -9,9 +10,11 @@ import {
   user,
 } from "@/db/schema";
 import { uniqueViolation } from "@/lib/db-errors.server";
+import { clinicNow, dayOfWeek } from "@/lib/clinic-time";
 import type {
   CreateDoctorInput,
   CreateServiceInput,
+  DoctorScheduleInput,
   UpdateDoctorInput,
   UpdateServiceInput,
 } from "@/validators/clinic";
@@ -257,4 +260,108 @@ export async function deleteDoctorAny(id: string) {
     .where(eq(doctors.id, id))
     .returning({ id: doctors.id });
   if (!deleted.length) throw new ClinicError("NOT_FOUND");
+}
+
+// ---------------------------------------------------------- Jam praktik
+
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/** Jam praktik mingguan satu dokter dalam bentuk satu blok per hari. */
+export async function getDoctorScheduleAny(doctorId: string) {
+  const [doctor] = await db
+    .select({ id: doctors.id })
+    .from(doctors)
+    .where(eq(doctors.id, doctorId))
+    .limit(1);
+  if (!doctor) throw new ClinicError("NOT_FOUND");
+  const rows = await db
+    .select({
+      dayOfWeek: doctorSchedules.dayOfWeek,
+      start: doctorSchedules.startTime,
+      end: doctorSchedules.endTime,
+      interval: doctorSchedules.slotIntervalMinutes,
+    })
+    .from(doctorSchedules)
+    .where(
+      and(
+        eq(doctorSchedules.doctorId, doctorId),
+        eq(doctorSchedules.isActive, true),
+      ),
+    )
+    .orderBy(asc(doctorSchedules.dayOfWeek), asc(doctorSchedules.startTime));
+  return {
+    doctorId,
+    slotIntervalMinutes: rows[0]?.interval ?? 30,
+    days: WEEK_ORDER.map((dayOfWeek) => {
+      const blocks = rows.filter((r) => r.dayOfWeek === dayOfWeek);
+      return blocks.length
+        ? {
+            dayOfWeek,
+            open: true,
+            start: blocks[0].start.slice(0, 5),
+            end: blocks[blocks.length - 1].end.slice(0, 5),
+          }
+        : { dayOfWeek, open: false, start: "09:00", end: "15:00" };
+    }),
+  };
+}
+
+/**
+ * Ganti seluruh jam praktik dokter dalam satu transaksi. Janji temu yang sudah
+ * dibooking tidak diubah; jumlah janji mendatang yang kini di luar jam praktik
+ * dikembalikan agar admin bisa menghubungi pasiennya.
+ */
+export async function saveDoctorScheduleAny(
+  doctorId: string,
+  input: DoctorScheduleInput,
+) {
+  await db.transaction(async (tx) => {
+    const [doctor] = await tx
+      .select({ id: doctors.id })
+      .from(doctors)
+      .where(eq(doctors.id, doctorId))
+      .for("update")
+      .limit(1);
+    if (!doctor) throw new ClinicError("NOT_FOUND");
+    await tx
+      .delete(doctorSchedules)
+      .where(eq(doctorSchedules.doctorId, doctorId));
+    const open = input.days.filter((day) => day.open);
+    if (open.length)
+      await tx.insert(doctorSchedules).values(
+        open.map((day) => ({
+          doctorId,
+          dayOfWeek: day.dayOfWeek,
+          startTime: day.start,
+          endTime: day.end,
+          slotIntervalMinutes: input.slotIntervalMinutes,
+        })),
+      );
+  });
+
+  const today = clinicNow().date;
+  const upcoming = await db
+    .select({
+      date: appointments.appointmentDate,
+      start: appointments.startTime,
+      end: appointments.endTime,
+    })
+    .from(appointments)
+    .where(
+      and(
+        eq(appointments.doctorId, doctorId),
+        eq(appointments.status, "scheduled"),
+        gte(appointments.appointmentDate, today),
+      ),
+    );
+  const outsideHours = upcoming.filter((a) => {
+    const day = input.days.find((d) => d.dayOfWeek === dayOfWeek(a.date));
+    return (
+      !day?.open ||
+      a.start.slice(0, 5) < day.start ||
+      a.end.slice(0, 5) > day.end
+    );
+  }).length;
+
+  return { ...(await getDoctorScheduleAny(doctorId)), outsideHours };
 }
