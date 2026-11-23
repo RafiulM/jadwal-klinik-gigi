@@ -14,7 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/logo";
 import {
   ApiFailure,
   bookingApi,
@@ -501,16 +501,9 @@ function BookingHero({ showIntro }: { showIntro: boolean }) {
     <header className="bg-brand-deep px-4 pt-4 pb-20 text-on-brand-deep md:px-8 md:pt-5 md:pb-26">
       <div className="mx-auto grid max-w-[640px] gap-8 lg:max-w-[1040px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <p className="text-lg font-bold tracking-tight">
-              {siteConfig.name}
-            </p>
-            <p className="text-sm text-on-brand-deep-muted">
-              Booking janji temu
-            </p>
-          </div>
+          <Logo tone="inverse" subtitle="Booking janji temu" />
           <Link
-            to="/sign-in"
+            to="/masuk"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-brand-deep-active px-3 text-sm font-semibold text-on-brand-deep hover:bg-brand-deep-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-brand-deep"
           >
             <LogIn className="size-4" aria-hidden="true" />

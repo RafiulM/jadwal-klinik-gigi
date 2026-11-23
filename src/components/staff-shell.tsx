@@ -10,6 +10,7 @@ import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import type { StaffNavItem } from "@/features/access/roles";
+import { Logo } from "@/components/logo";
 
 export type { StaffNavItem } from "@/features/access/roles";
 
@@ -43,11 +44,12 @@ export function StaffShell({
   return (
     <div className="min-h-svh bg-background lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-brand-deep px-4 py-2 text-on-brand-deep lg:hidden">
-        <Link to="/" className="flex items-baseline gap-2 rounded-sm">
-          <span className="text-lg font-bold tracking-tight">
-            {siteConfig.name}
-          </span>
-          <span className="text-sm text-on-brand-deep-muted">Area staf</span>
+        <Link
+          to="/"
+          aria-label={`${siteConfig.name}, halaman booking`}
+          className="flex rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-brand-deep"
+        >
+          <Logo tone="inverse" subtitle="Area staf" />
         </Link>
         <button
           ref={menuButtonRef}
@@ -82,11 +84,14 @@ export function StaffShell({
           "lg:sticky lg:top-0 lg:flex lg:h-svh lg:px-4 lg:pt-8 lg:pb-5 lg:shadow-none",
         )}
       >
-        <div className="hidden gap-1 px-3 lg:grid">
-          <Link to="/" className="text-xl font-bold tracking-tight">
-            {siteConfig.name}
+        <div className="hidden px-2 lg:flex">
+          <Link
+            to="/"
+            aria-label={`${siteConfig.name}, halaman booking`}
+            className="flex rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-brand-deep"
+          >
+            <Logo tone="inverse" size="lg" subtitle="Area staf" />
           </Link>
-          <p className="text-sm text-on-brand-deep-muted">Area staf</p>
         </div>
 
         <nav aria-label="Menu staf" className="grid gap-1">

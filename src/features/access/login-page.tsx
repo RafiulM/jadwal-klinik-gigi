@@ -18,7 +18,7 @@ import {
   Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/logo";
 import { accessApi, SignInFailure } from "./api";
 import { ROLE_INFO, roleLabel, type StaffRole } from "./roles";
 
@@ -91,10 +91,7 @@ export function LoginPage() {
   return (
     <div className="min-h-svh bg-background lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <section className="flex flex-col gap-8 bg-brand-deep px-5 pt-6 pb-8 text-on-brand-deep md:px-10 md:pt-10 lg:min-h-svh lg:justify-center lg:px-14">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <p className="text-lg font-bold tracking-tight">{siteConfig.name}</p>
-          <p className="text-sm text-on-brand-deep-muted">Area staf</p>
-        </div>
+        <Logo tone="inverse" size="lg" subtitle="Area staf" />
         <div className="grid gap-3">
           <h1 className="text-2xl leading-tight font-bold tracking-tight lg:text-4xl">
             Selamat datang kembali
