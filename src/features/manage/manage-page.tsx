@@ -1,6 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import {
   Clock,
+  Eye,
   Plus,
   Stethoscope,
   UserRound,
@@ -17,15 +18,17 @@ import { cn } from "@/lib/utils";
 import { DoctorsPanel } from "./doctors-panel";
 import type { AdminDoctor, AdminService } from "./mock-data";
 import { HoursEditor } from "./hours-editor";
+import { BookingPreview } from "./booking-preview";
 import { ServicesPanel } from "./services-panel";
 import { EditButton, Switch } from "./ui";
 
-type TabId = "layanan" | "dokter" | "jam";
+type TabId = "layanan" | "dokter" | "jam" | "pratinjau";
 
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "layanan", label: "Layanan", icon: Stethoscope },
   { id: "dokter", label: "Dokter", icon: UserRound },
   { id: "jam", label: "Jam praktik", icon: Clock },
+  { id: "pratinjau", label: "Pratinjau booking", icon: Eye },
 ];
 
 export function ManagePage() {
@@ -69,6 +72,7 @@ function ManageView({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
+  const [scheduleVersion, setScheduleVersion] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -81,6 +85,7 @@ function ManageView({
     layanan: services.length,
     dokter: doctors.length,
     jam: null,
+    pratinjau: null,
   };
 
   // Tab mengikuti pola ARIA: panah kiri/kanan, Home, End.
@@ -355,7 +360,17 @@ function ManageView({
               setScheduleDoctor(id);
               setMessage("");
             }}
-            onSaved={announce}
+            onSaved={(text) => {
+              announce(text);
+              setScheduleVersion((v) => v + 1);
+            }}
+          />
+        ) : null}
+        {tab === "pratinjau" ? (
+          <BookingPreview
+            services={services}
+            doctors={doctors}
+            version={scheduleVersion}
           />
         ) : null}
       </section>
