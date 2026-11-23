@@ -1,8 +1,10 @@
 import { useRef, useState, type MouseEvent } from "react";
+import { getRouteApi } from "@tanstack/react-router";
 import {
   CalendarDays,
   CalendarOff,
   CalendarRange,
+  ChevronLeft,
   ChevronRight,
   Inbox,
   List,
@@ -26,9 +28,12 @@ import {
   initialsOf,
 } from "@/features/booking/format";
 import { AppointmentDialog } from "./appointment-dialog";
-import { doctorInitials, weekRangeLabel } from "./schedule-format";
+import { addDays } from "@/lib/clinic-time";
+import { doctorInitials, mondayOf, weekRangeLabel } from "./schedule-format";
 import { WeekCalendar } from "./week-calendar";
-import { SCHEDULE_WEEK, type ScheduleWeek } from "./mock-data";
+import { MOCK_TODAY, getMockWeek, type ScheduleWeek } from "./mock-data";
+
+const route = getRouteApi("/_protected/jadwal");
 
 const card =
   "rounded-xl border bg-card shadow-[0_1px_2px_rgb(27_36_33/0.05),0_8px_24px_rgb(27_36_33/0.05)]";
@@ -58,13 +63,59 @@ const STATUS_TILES: {
 ];
 
 export function SchedulePage() {
-  return <ScheduleView week={SCHEDULE_WEEK} />;
+  const search = route.useSearch();
+  const navigate = route.useNavigate();
+  const today = MOCK_TODAY;
+  const date = search.tanggal ?? today;
+  const week = getMockWeek(mondayOf(date));
+  const doctorId =
+    search.dokter && week.doctors.some((d) => d.id === search.dokter)
+      ? search.dokter
+      : "semua";
+
+  return (
+    <ScheduleView
+      week={week}
+      date={date}
+      doctorId={doctorId}
+      onDateChange={(tanggal) =>
+        navigate({
+          search: (prev) => ({
+            ...prev,
+            tanggal: tanggal === today ? undefined : tanggal,
+          }),
+          replace: true,
+        })
+      }
+      onDoctorChange={(dokter) =>
+        navigate({
+          search: (prev) => ({
+            ...prev,
+            dokter: dokter === "semua" ? undefined : dokter,
+          }),
+          replace: true,
+        })
+      }
+    />
+  );
 }
 
-function ScheduleView({ week }: { week: ScheduleWeek }) {
+function ScheduleView({
+  week,
+  date,
+  doctorId,
+  onDateChange,
+  onDoctorChange,
+}: {
+  week: ScheduleWeek;
+  date: string;
+  doctorId: string;
+  onDateChange: (date: string) => void;
+  onDoctorChange: (doctorId: string) => void;
+}) {
   const [view, setView] = useState<"kalender" | "daftar">("kalender");
-  const [date, setDate] = useState(week.today);
-  const [doctorId, setDoctorId] = useState("semua");
+  const setDate = onDateChange;
+  const setDoctorId = onDoctorChange;
   const [serviceId, setServiceId] = useState("semua");
   const [status, setStatus] = useState<StatusFilter>("semua");
   const [query, setQuery] = useState("");
@@ -174,7 +225,7 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
         aria-label="Filter jadwal"
         className={cn(
           card,
-          "mb-5 grid gap-3 p-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.4fr)_auto] md:items-end",
+          "mb-5 grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_auto] xl:items-end",
         )}
       >
         <div className="grid min-w-0 gap-2">
@@ -196,6 +247,21 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
               className={cn(control, "pl-10")}
             />
           </div>
+        </div>
+        <div className="grid min-w-0 gap-2">
+          <label htmlFor="jadwal-tanggal" className="text-sm font-semibold">
+            Tanggal
+          </label>
+          <input
+            id="jadwal-tanggal"
+            type="date"
+            value={date}
+            onChange={(e) => {
+              if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))
+                setDate(e.target.value);
+            }}
+            className={control}
+          />
         </div>
         <div className="grid min-w-0 gap-2">
           <label htmlFor="jadwal-dokter" className="text-sm font-semibold">
@@ -237,7 +303,7 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
           type="button"
           onClick={resetFilters}
           disabled={!filtered}
-          className="inline-flex min-h-12 items-center gap-2 rounded-md border border-border-strong bg-card px-3 text-sm font-semibold whitespace-nowrap hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground disabled:hover:bg-card"
+          className="inline-flex min-h-12 items-center gap-2 justify-self-start rounded-md border border-border-strong bg-card px-3 text-sm font-semibold whitespace-nowrap hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground disabled:hover:bg-card"
         >
           <RotateCcw className="size-4" aria-hidden="true" />
           Reset filter
@@ -284,12 +350,19 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
         <section aria-labelledby="kalender-title" className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="grid gap-1">
-              <h2 id="kalender-title" className="text-lg font-bold">
-                {weekRangeLabel(
-                  week.days[0].date,
-                  week.days[week.days.length - 1].date,
-                )}
-              </h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 id="kalender-title" className="text-lg font-bold">
+                  {weekRangeLabel(
+                    week.days[0].date,
+                    week.days[week.days.length - 1].date,
+                  )}
+                </h2>
+                <WeekNav
+                  onPrev={() => setDate(addDays(date, -7))}
+                  onToday={() => setDate(week.today)}
+                  onNext={() => setDate(addDays(date, 7))}
+                />
+              </div>
               <p aria-live="polite" className="text-sm text-muted-foreground">
                 Menampilkan {rows.length} janji minggu ini
                 {filtered ? " (difilter)" : ""}. Klik nama hari untuk melihat
@@ -425,9 +498,16 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
 
           <section aria-labelledby="daftar-title" className="grid gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 id="daftar-title" className="text-lg font-bold">
-                {formatLongDate(date)}
-              </h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 id="daftar-title" className="text-lg font-bold">
+                  {formatLongDate(date)}
+                </h2>
+                <WeekNav
+                  onPrev={() => setDate(addDays(date, -7))}
+                  onToday={() => setDate(week.today)}
+                  onNext={() => setDate(addDays(date, 7))}
+                />
+              </div>
               <p aria-live="polite" className="text-sm text-muted-foreground">
                 Menampilkan {rows.length} janji{filtered ? " (difilter)" : ""}
               </p>
@@ -592,5 +672,33 @@ function Cell({
       </span>
       <span className="justify-self-start">{children}</span>
     </td>
+  );
+}
+
+function WeekNav({
+  onPrev,
+  onToday,
+  onNext,
+}: {
+  onPrev: () => void;
+  onToday: () => void;
+  onNext: () => void;
+}) {
+  const button =
+    "inline-flex min-h-10 items-center justify-center gap-1 rounded-md border border-border-strong bg-card px-3 text-sm font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  return (
+    <div role="group" aria-label="Pindah minggu" className="flex gap-1">
+      <button type="button" onClick={onPrev} className={button}>
+        <ChevronLeft className="size-4" aria-hidden="true" />
+        <span className="sr-only sm:not-sr-only">Minggu lalu</span>
+      </button>
+      <button type="button" onClick={onToday} className={button}>
+        Hari ini
+      </button>
+      <button type="button" onClick={onNext} className={button}>
+        <span className="sr-only sm:not-sr-only">Minggu depan</span>
+        <ChevronRight className="size-4" aria-hidden="true" />
+      </button>
+    </div>
   );
 }

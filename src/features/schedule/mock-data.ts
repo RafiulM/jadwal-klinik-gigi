@@ -170,15 +170,31 @@ function build(): ScheduleAppointment[] {
   );
 }
 
-export const SCHEDULE_WEEK: ScheduleWeek = {
-  today: TODAY,
-  from: TODAY,
-  days: DAYS,
-  doctors: DOCTORS.map(({ id, name, practiceDays }) => ({
-    id,
-    name,
-    practiceDays,
-  })),
-  services: SERVICES,
-  appointments: build(),
-};
+const ALL = build();
+
+export const MOCK_TODAY = TODAY;
+
+/** Tiruan GET /api/schedule?from=…&days=7: hanya minggu 23–29 Nov berisi data. */
+export function getMockWeek(from: string): ScheduleWeek {
+  const [y, m, d] = from.split("-").map(Number);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(Date.UTC(y, m - 1, d + i));
+    return {
+      date: date.toISOString().slice(0, 10),
+      dayOfWeek: date.getUTCDay(),
+    };
+  });
+  const dates = new Set(days.map((day) => day.date));
+  return {
+    today: TODAY,
+    from,
+    days,
+    doctors: DOCTORS.map(({ id, name, practiceDays }) => ({
+      id,
+      name,
+      practiceDays,
+    })),
+    services: SERVICES,
+    appointments: ALL.filter((a) => dates.has(a.date)),
+  };
+}

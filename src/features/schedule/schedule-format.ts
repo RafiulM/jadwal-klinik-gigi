@@ -1,3 +1,10 @@
+import { addDays, dayOfWeek } from "@/lib/clinic-time";
+
+/** Senin pada minggu tanggal itu; papan jadwal menampilkan Senin–Minggu. */
+export function mondayOf(date: string) {
+  return addDays(date, -((dayOfWeek(date) + 6) % 7));
+}
+
 /** Inisial dokter tanpa gelar: "drg. Rina Pratiwi" → "RP". */
 export function doctorInitials(name: string) {
   return (
