@@ -16,6 +16,7 @@ import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
+import { Route as JanjiCodeRouteImport } from './routes/janji/$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiBookingIndexRouteImport } from './routes/api/booking/index'
 import { Route as ApiBookingCodeRouteImport } from './routes/api/booking/$code'
@@ -59,6 +60,11 @@ const ProtectedAppRoute = ProtectedAppRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const JanjiCodeRoute = JanjiCodeRouteImport.update({
+  id: '/janji/$code',
+  path: '/janji/$code',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof AuthSignUpRoute
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
+  '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof AuthSignUpRoute
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
+  '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_protected/admin': typeof ProtectedAdminRoute
   '/_protected/app': typeof ProtectedAppRoute
+  '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin'
     | '/app'
+    | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
     | '/api/booking/availability'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin'
     | '/app'
+    | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
     | '/api/booking/availability'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-up'
     | '/_protected/admin'
     | '/_protected/app'
+    | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
     | '/api/booking/availability'
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   ProtectedRoute: typeof ProtectedRouteWithChildren
+  JanjiCodeRoute: typeof JanjiCodeRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiBookingCodeRoute: typeof ApiBookingCodeRoute
   ApiBookingAvailabilityRoute: typeof ApiBookingAvailabilityRoute
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app'
       preLoaderRoute: typeof ProtectedAppRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/janji/$code': {
+      id: '/janji/$code'
+      path: '/janji/$code'
+      fullPath: '/janji/$code'
+      preLoaderRoute: typeof JanjiCodeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -391,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   ProtectedRoute: ProtectedRouteWithChildren,
+  JanjiCodeRoute: JanjiCodeRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiBookingCodeRoute: ApiBookingCodeRoute,
   ApiBookingAvailabilityRoute: ApiBookingAvailabilityRoute,
