@@ -32,6 +32,7 @@ import { Route as ApiDoctorTodayRouteImport } from './routes/api/doctor/today'
 import { Route as ApiFollowUpsIndexRouteImport } from './routes/api/follow-ups/index'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
+import { Route as ApiReportsDailyRouteImport } from './routes/api/reports/daily'
 import { Route as ApiScheduleIndexRouteImport } from './routes/api/schedule/index'
 import { Route as ApiStaffMeRouteImport } from './routes/api/staff/me'
 import { Route as ApiAdminDoctorsIndexRouteImport } from './routes/api/admin/doctors/index'
@@ -159,6 +160,11 @@ const ApiNotesIdRoute = ApiNotesIdRouteImport.update({
   path: '/api/notes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportsDailyRoute = ApiReportsDailyRouteImport.update({
+  id: '/api/reports/daily',
+  path: '/api/reports/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiScheduleIndexRoute = ApiScheduleIndexRouteImport.update({
   id: '/api/schedule/',
   path: '/api/schedule/',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
+  '/api/reports/daily': typeof ApiReportsDailyRoute
   '/api/staff/me': typeof ApiStaffMeRoute
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/follow-ups/': typeof ApiFollowUpsIndexRoute
@@ -283,6 +290,7 @@ export interface FileRoutesByTo {
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
+  '/api/reports/daily': typeof ApiReportsDailyRoute
   '/api/staff/me': typeof ApiStaffMeRoute
   '/api/booking': typeof ApiBookingIndexRoute
   '/api/follow-ups': typeof ApiFollowUpsIndexRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
+  '/api/reports/daily': typeof ApiReportsDailyRoute
   '/api/staff/me': typeof ApiStaffMeRoute
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/follow-ups/': typeof ApiFollowUpsIndexRoute
@@ -360,6 +369,7 @@ export interface FileRouteTypes {
     | '/api/booking/services'
     | '/api/doctor/today'
     | '/api/notes/$id'
+    | '/api/reports/daily'
     | '/api/staff/me'
     | '/api/booking/'
     | '/api/follow-ups/'
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/api/booking/services'
     | '/api/doctor/today'
     | '/api/notes/$id'
+    | '/api/reports/daily'
     | '/api/staff/me'
     | '/api/booking'
     | '/api/follow-ups'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/api/booking/services'
     | '/api/doctor/today'
     | '/api/notes/$id'
+    | '/api/reports/daily'
     | '/api/staff/me'
     | '/api/booking/'
     | '/api/follow-ups/'
@@ -465,6 +477,7 @@ export interface RootRouteChildren {
   ApiBookingServicesRoute: typeof ApiBookingServicesRoute
   ApiDoctorTodayRoute: typeof ApiDoctorTodayRoute
   ApiNotesIdRoute: typeof ApiNotesIdRoute
+  ApiReportsDailyRoute: typeof ApiReportsDailyRoute
   ApiStaffMeRoute: typeof ApiStaffMeRoute
   ApiBookingIndexRoute: typeof ApiBookingIndexRoute
   ApiFollowUpsIndexRoute: typeof ApiFollowUpsIndexRoute
@@ -644,6 +657,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNotesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/daily': {
+      id: '/api/reports/daily'
+      path: '/api/reports/daily'
+      fullPath: '/api/reports/daily'
+      preLoaderRoute: typeof ApiReportsDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/schedule/': {
       id: '/api/schedule/'
       path: '/api/schedule'
@@ -810,6 +830,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBookingServicesRoute: ApiBookingServicesRoute,
   ApiDoctorTodayRoute: ApiDoctorTodayRoute,
   ApiNotesIdRoute: ApiNotesIdRoute,
+  ApiReportsDailyRoute: ApiReportsDailyRoute,
   ApiStaffMeRoute: ApiStaffMeRoute,
   ApiBookingIndexRoute: ApiBookingIndexRoute,
   ApiFollowUpsIndexRoute: ApiFollowUpsIndexRoute,
