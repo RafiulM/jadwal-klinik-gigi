@@ -4,11 +4,14 @@ import { CircleAlert, X } from "lucide-react";
 /** Dialog modal untuk form tambah/ubah. Konten hanya dirender saat terbuka. */
 export function FormDialog({
   open,
+  busy,
   titleId,
   onClose,
   children,
 }: {
   open: boolean;
+  /** Saat menyimpan, Escape tidak menutup dialog. */
+  busy?: boolean;
   titleId: string;
   onClose: () => void;
   children: ReactNode;
@@ -24,6 +27,9 @@ export function FormDialog({
     <dialog
       ref={ref}
       onClose={onClose}
+      onCancel={(event) => {
+        if (busy) event.preventDefault();
+      }}
       aria-labelledby={titleId}
       className="m-auto w-[calc(100%-2rem)] max-w-[560px] rounded-xl border bg-card p-0 text-foreground backdrop:bg-brand-deep/55"
     >
@@ -71,6 +77,7 @@ export function DialogForm({
         <button
           type="button"
           onClick={onCancel}
+          disabled={saving}
           aria-label="Tutup"
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
@@ -96,13 +103,15 @@ export function DialogForm({
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex min-h-12 items-center rounded-md border border-border-strong bg-card px-5 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          disabled={saving}
+          className="inline-flex min-h-12 items-center rounded-md border border-border-strong bg-card px-5 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-muted-foreground"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={saving}
+          aria-busy={saving}
           className="inline-flex min-h-12 items-center rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-70"
         >
           {saving ? "Menyimpan…" : submitLabel}

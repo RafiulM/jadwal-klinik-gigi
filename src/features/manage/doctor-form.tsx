@@ -15,7 +15,9 @@ export function doctorErrors(input: {
   phone: string;
   accountEmail: string;
   serviceIds: string[];
+  takenEmails?: string[];
 }) {
+  const email = input.accountEmail.trim().toLowerCase();
   const phone = input.phone.replace(/[\s-]/g, "");
   return {
     name: !input.name.trim()
@@ -28,15 +30,20 @@ export function doctorErrors(input: {
         ? ""
         : "Gunakan nomor HP Indonesia, contoh 0812 3456 7890.",
     accountEmail:
-      input.accountEmail.trim() === "" || EMAIL.test(input.accountEmail.trim())
+      email === ""
         ? ""
-        : "Gunakan alamat email yang valid.",
+        : !EMAIL.test(email)
+          ? "Gunakan alamat email yang valid."
+          : (input.takenEmails ?? []).includes(email)
+            ? "Email ini sudah ditautkan ke dokter lain."
+            : "",
     services: input.serviceIds.length ? "" : "Pilih minimal satu layanan.",
   };
 }
 
 export function DoctorForm({
   initial,
+  takenEmails,
   services,
   saving,
   error,
@@ -44,6 +51,7 @@ export function DoctorForm({
   onSave,
 }: {
   initial: AdminDoctor | null;
+  takenEmails: string[];
   services: AdminService[];
   saving: boolean;
   error?: string;
@@ -60,7 +68,13 @@ export function DoctorForm({
     initial?.serviceIds ?? [],
   );
   const [tried, setTried] = useState(false);
-  const errors = doctorErrors({ name, phone, accountEmail, serviceIds });
+  const errors = doctorErrors({
+    name,
+    phone,
+    accountEmail,
+    serviceIds,
+    takenEmails,
+  });
   const show = (key: keyof typeof errors) => (tried ? errors[key] : "");
 
   function toggle(id: string, on: boolean) {

@@ -91,7 +91,10 @@ export function BookingPreview({
               }));
             const bookable = offering.filter((o) => o.slots > 0);
             return (
-              <li key={service.id} className={cn(card, "grid content-start gap-3 p-4")}>
+              <li
+                key={service.id}
+                className={cn(card, "grid content-start gap-3 p-4")}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="grid gap-1">
                     <h3 className="font-bold">{service.name}</h3>

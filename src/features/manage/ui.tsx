@@ -165,7 +165,7 @@ export function Switch({
       >
         <span className="absolute top-1 left-1 size-4 rounded-full bg-card motion-reduce:transition-none" />
       </span>
-      <span>{children}</span>
+      <span>{disabled ? "Menyimpan…" : children}</span>
     </label>
   );
 }

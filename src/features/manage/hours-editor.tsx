@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleCheck, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { messageOf } from "@/lib/api-client";
@@ -31,6 +31,15 @@ export function HoursEditor({
   const [saved, setSaved] = useState<Record<string, DoctorWeekSchedule>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const hasDrafts = Object.keys(drafts).length > 0;
+
+  // Peringatkan sebelum menutup/memuat ulang tab bila ada draf jam praktik.
+  useEffect(() => {
+    if (!hasDrafts) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasDrafts]);
 
   if (!doctors.length)
     return (

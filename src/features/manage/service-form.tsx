@@ -11,7 +11,11 @@ export function serviceErrors(input: {
   name: string;
   duration: string;
   followUp: string;
+  takenNames?: string[];
 }) {
+  const taken = (input.takenNames ?? []).some(
+    (name) => name.trim().toLowerCase() === input.name.trim().toLowerCase(),
+  );
   const duration = Number(input.duration);
   const followUp = Number(input.followUp);
   return {
@@ -19,7 +23,9 @@ export function serviceErrors(input: {
       ? "Isi nama layanan."
       : input.name.trim().length > 80
         ? "Nama layanan maksimal 80 karakter."
-        : "",
+        : taken
+          ? "Nama layanan ini sudah dipakai."
+          : "",
     duration:
       Number.isInteger(duration) && duration >= 5 && duration <= 240
         ? ""
@@ -34,12 +40,14 @@ export function serviceErrors(input: {
 
 export function ServiceForm({
   initial,
+  takenNames,
   saving,
   error,
   onCancel,
   onSave,
 }: {
   initial: AdminService | null;
+  takenNames: string[];
   saving: boolean;
   error?: string;
   onCancel: () => void;
@@ -54,7 +62,7 @@ export function ServiceForm({
     initial?.followUpDays ? String(initial.followUpDays) : "",
   );
   const [tried, setTried] = useState(false);
-  const errors = serviceErrors({ name, duration, followUp });
+  const errors = serviceErrors({ name, duration, followUp, takenNames });
   const show = (key: keyof typeof errors) => (tried ? errors[key] : "");
 
   function submit() {

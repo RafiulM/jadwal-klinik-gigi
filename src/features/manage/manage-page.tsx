@@ -286,86 +286,102 @@ function ManageView({
 
       <section
         role="tabpanel"
-        id={`panel-${tab}`}
-        aria-labelledby={`tab-${tab}`}
+        id="panel-layanan"
+        aria-labelledby="tab-layanan"
+        hidden={tab !== "layanan"}
       >
-        {tab === "layanan" ? (
-          <ServicesPanel
-            services={services}
-            actions={
-              <button
-                type="button"
-                onClick={() => openEditor({ type: "layanan", item: null })}
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Tambah layanan
-              </button>
-            }
-            renderToggle={(s) => (
-              <Switch
-                label={`Tampil di booking: ${s.name}`}
-                checked={s.isActive}
-                disabled={toggling === s.id}
-                onChange={(on) => toggleService(s, on)}
-              >
-                {s.isActive ? "Tampil" : "Disembunyikan"}
-              </Switch>
-            )}
-            renderEdit={(s) => (
-              <EditButton
-                label={`Ubah ${s.name}`}
-                onClick={() => openEditor({ type: "layanan", item: s })}
-              />
-            )}
-          />
-        ) : null}
-        {tab === "dokter" ? (
-          <DoctorsPanel
-            doctors={doctors}
-            services={services}
-            actions={
-              <button
-                type="button"
-                onClick={() => openEditor({ type: "dokter", item: null })}
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Tambah dokter
-              </button>
-            }
-            renderToggle={(d) => (
-              <Switch
-                label={`Terima booking: ${d.name}`}
-                checked={d.isActive}
-                disabled={toggling === d.id}
-                onChange={(on) => toggleDoctor(d, on)}
-              >
-                {d.isActive ? "Menerima" : "Tidak menerima"}
-              </Switch>
-            )}
-            renderEdit={(d) => (
-              <EditButton
-                label={`Ubah ${d.name}`}
-                onClick={() => openEditor({ type: "dokter", item: d })}
-              />
-            )}
-          />
-        ) : null}
-        {tab === "jam" ? (
-          <HoursEditor
-            doctors={doctors}
-            doctorId={scheduleDoctor}
-            onDoctorChange={(id) => {
-              setScheduleDoctor(id);
-              setMessage("");
-            }}
-            onSaved={(text) => {
-              announce(text);
-              setScheduleVersion((v) => v + 1);
-            }}
-          />
-        ) : null}
+        <ServicesPanel
+          services={services}
+          actions={
+            <button
+              type="button"
+              onClick={() => openEditor({ type: "layanan", item: null })}
+              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Tambah layanan
+            </button>
+          }
+          renderToggle={(s) => (
+            <Switch
+              label={`Tampil di booking: ${s.name}`}
+              checked={s.isActive}
+              disabled={toggling === s.id}
+              onChange={(on) => toggleService(s, on)}
+            >
+              {s.isActive ? "Tampil" : "Disembunyikan"}
+            </Switch>
+          )}
+          renderEdit={(s) => (
+            <EditButton
+              label={`Ubah ${s.name}`}
+              onClick={() => openEditor({ type: "layanan", item: s })}
+            />
+          )}
+        />
+      </section>
+      <section
+        role="tabpanel"
+        id="panel-dokter"
+        aria-labelledby="tab-dokter"
+        hidden={tab !== "dokter"}
+      >
+        <DoctorsPanel
+          doctors={doctors}
+          services={services}
+          actions={
+            <button
+              type="button"
+              onClick={() => openEditor({ type: "dokter", item: null })}
+              className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Tambah dokter
+            </button>
+          }
+          renderToggle={(d) => (
+            <Switch
+              label={`Terima booking: ${d.name}`}
+              checked={d.isActive}
+              disabled={toggling === d.id}
+              onChange={(on) => toggleDoctor(d, on)}
+            >
+              {d.isActive ? "Menerima" : "Tidak menerima"}
+            </Switch>
+          )}
+          renderEdit={(d) => (
+            <EditButton
+              label={`Ubah ${d.name}`}
+              onClick={() => openEditor({ type: "dokter", item: d })}
+            />
+          )}
+        />
+      </section>
+      <section
+        role="tabpanel"
+        id="panel-jam"
+        aria-labelledby="tab-jam"
+        hidden={tab !== "jam"}
+      >
+        <HoursEditor
+          doctors={doctors}
+          doctorId={scheduleDoctor}
+          onDoctorChange={(id) => {
+            setScheduleDoctor(id);
+            setMessage("");
+          }}
+          onSaved={(text) => {
+            announce(text);
+            setScheduleVersion((v) => v + 1);
+          }}
+        />
+      </section>
+      <section
+        role="tabpanel"
+        id="panel-pratinjau"
+        aria-labelledby="tab-pratinjau"
+        hidden={tab !== "pratinjau"}
+      >
         {tab === "pratinjau" ? (
           <BookingPreview
             services={services}
@@ -377,12 +393,16 @@ function ManageView({
 
       <FormDialog
         open={editing !== null}
+        busy={saving}
         titleId={editing?.type === "dokter" ? "dokter-title" : "layanan-title"}
         onClose={closeEditor}
       >
         {editing?.type === "layanan" ? (
           <ServiceForm
             initial={editing.item}
+            takenNames={services
+              .filter((s) => s.id !== editing.item?.id)
+              .map((s) => s.name)}
             saving={saving}
             error={formError}
             onCancel={closeEditor}
@@ -392,6 +412,9 @@ function ManageView({
         {editing?.type === "dokter" ? (
           <DoctorForm
             initial={editing.item}
+            takenEmails={doctors
+              .filter((d) => d.id !== editing.item?.id && d.accountEmail)
+              .map((d) => d.accountEmail!)}
             services={services}
             saving={saving}
             error={formError}
