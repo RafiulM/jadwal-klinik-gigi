@@ -1,6 +1,15 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, between, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
+  addDays,
+  clinicNow,
+  dayOfWeek,
+  fromMinutes,
+  toMinutes,
+} from "@/lib/clinic-time";
+import type { AvailabilityQuery } from "@/validators/booking";
+import {
+  appointments,
   doctorSchedules,
   doctorServices,
   doctors,
@@ -79,4 +88,89 @@ export async function listDoctorsForService(serviceId: string) {
         slotIntervalMinutes: s.slotIntervalMinutes,
       })),
   }));
+}
+
+export type SlotStatus = "available" | "taken" | "past";
+
+// Slot per tanggal untuk satu dokter aktif. Jam yang sudah dipesan siapa pun
+// (apa pun statusnya) tetap terisi; jam hari ini yang sudah lewat tidak bisa dipilih.
+// Mengembalikan null bila dokter tidak ada atau sedang tidak menerima booking.
+export async function getAvailability(
+  { doctorId, from, days }: AvailabilityQuery,
+  now = new Date(),
+) {
+  const [doctor] = await db
+    .select({ id: doctors.id })
+    .from(doctors)
+    .where(and(eq(doctors.id, doctorId), eq(doctors.isActive, true)))
+    .limit(1);
+  if (!doctor) return null;
+
+  const today = clinicNow(now);
+  const start = !from || from < today.date ? today.date : from;
+  const end = addDays(start, days - 1);
+
+  const [schedules, booked] = await Promise.all([
+    db
+      .select({
+        dayOfWeek: doctorSchedules.dayOfWeek,
+        startTime: doctorSchedules.startTime,
+        endTime: doctorSchedules.endTime,
+        slotIntervalMinutes: doctorSchedules.slotIntervalMinutes,
+      })
+      .from(doctorSchedules)
+      .where(
+        and(
+          eq(doctorSchedules.doctorId, doctorId),
+          eq(doctorSchedules.isActive, true),
+        ),
+      )
+      .orderBy(asc(doctorSchedules.startTime)),
+    db
+      .select({
+        date: appointments.appointmentDate,
+        startTime: appointments.startTime,
+      })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.doctorId, doctorId),
+          between(appointments.appointmentDate, start, end),
+        ),
+      ),
+  ]);
+
+  const taken = new Set(
+    booked.map((row) => `${row.date}|${row.startTime.slice(0, 5)}`),
+  );
+
+  return {
+    doctorId,
+    from: start,
+    days: Array.from({ length: days }, (_, i) => {
+      const date = addDays(start, i);
+      const dow = dayOfWeek(date);
+      const slots = schedules
+        .filter((s) => s.dayOfWeek === dow)
+        .flatMap((s) => {
+          const out: { time: string; status: SlotStatus }[] = [];
+          for (
+            let m = toMinutes(s.startTime);
+            m < toMinutes(s.endTime);
+            m += s.slotIntervalMinutes
+          ) {
+            const time = fromMinutes(m);
+            const status: SlotStatus = taken.has(`${date}|${time}`)
+              ? "taken"
+              : date === today.date && m <= today.minutes
+                ? "past"
+                : "available";
+            out.push({ time, status });
+          }
+          return out;
+        })
+        .sort((a, b) => a.time.localeCompare(b.time));
+      return { date, dayOfWeek: dow, slots };
+    }),
+  };
 }

@@ -17,6 +17,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiBookingAvailabilityRouteImport } from './routes/api/booking/availability'
 import { Route as ApiBookingDoctorsRouteImport } from './routes/api/booking/doctors'
 import { Route as ApiBookingServicesRouteImport } from './routes/api/booking/services'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
@@ -62,6 +63,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookingAvailabilityRoute = ApiBookingAvailabilityRouteImport.update({
+  id: '/api/booking/availability',
+  path: '/api/booking/availability',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBookingDoctorsRoute = ApiBookingDoctorsRouteImport.update({
   id: '/api/booking/doctors',
   path: '/api/booking/doctors',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/_protected/admin': typeof ProtectedAdminRoute
   '/_protected/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/_protected/admin'
     | '/_protected/app'
     | '/api/auth/$'
+    | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ProtectedRoute: typeof ProtectedRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBookingAvailabilityRoute: typeof ApiBookingAvailabilityRoute
   ApiBookingDoctorsRoute: typeof ApiBookingDoctorsRoute
   ApiBookingServicesRoute: typeof ApiBookingServicesRoute
   ApiNotesIdRoute: typeof ApiNotesIdRoute
@@ -254,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/booking/availability': {
+      id: '/api/booking/availability'
+      path: '/api/booking/availability'
+      fullPath: '/api/booking/availability'
+      preLoaderRoute: typeof ApiBookingAvailabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/booking/doctors': {
@@ -332,6 +352,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ProtectedRoute: ProtectedRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBookingAvailabilityRoute: ApiBookingAvailabilityRoute,
   ApiBookingDoctorsRoute: ApiBookingDoctorsRoute,
   ApiBookingServicesRoute: ApiBookingServicesRoute,
   ApiNotesIdRoute: ApiNotesIdRoute,
