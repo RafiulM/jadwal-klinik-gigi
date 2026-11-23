@@ -27,6 +27,14 @@ export type ScheduleAppointment = {
   patient: { id: string; name: string; phone: string };
 };
 
+/** Detail dari GET /api/schedule/appointments/:id. */
+export type ScheduleAppointmentDetail = ScheduleAppointment & {
+  statusChangedAt: string | null;
+  statusChangedBy: string | null;
+  followUpStatus: "pending" | "booked" | "done" | null;
+  previousVisits: number;
+};
+
 export type ScheduleWeek = {
   today: string;
   from: string;

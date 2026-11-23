@@ -4,12 +4,13 @@
 import { apiRequest } from "@/lib/api-client";
 import {
   getMockWeek,
-  type ScheduleAppointment,
+  type ScheduleAppointmentDetail,
   type ScheduleWeek,
 } from "./mock-data";
 
 export type {
   ScheduleAppointment,
+  ScheduleAppointmentDetail,
   ScheduleDoctor,
   ScheduleWeek,
 } from "./mock-data";
@@ -20,7 +21,7 @@ const http = {
       `/api/schedule?from=${encodeURIComponent(from)}&days=7`,
     ),
   appointment: (id: string) =>
-    apiRequest<ScheduleAppointment>(
+    apiRequest<ScheduleAppointmentDetail>(
       `/api/schedule/appointments/${encodeURIComponent(id)}`,
     ),
 };
@@ -38,7 +39,13 @@ const mock: typeof http = {
       (a) => a.id === id,
     );
     if (!found) throw new Error("Janji temu tidak ditemukan.");
-    return found;
+    return {
+      ...found,
+      statusChangedAt: null,
+      statusChangedBy: null,
+      followUpStatus: null,
+      previousVisits: 0,
+    };
   },
 };
 

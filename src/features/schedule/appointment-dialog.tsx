@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarPlus,
   ExternalLink,
+  History,
   MessageCircle,
   NotebookPen,
   ReceiptText,
@@ -15,7 +16,11 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { displayTime, formatLongDate } from "@/features/booking/format";
-import type { ScheduleAppointment } from "./mock-data";
+import type {
+  ScheduleAppointment,
+  ScheduleAppointmentDetail,
+} from "./mock-data";
+import { FollowUpBadge } from "@/features/followup/follow-up-status";
 
 function Fact({
   label,
@@ -64,7 +69,7 @@ export function AppointmentDialog({
   onClose,
   children,
 }: {
-  appointment: ScheduleAppointment | null;
+  appointment: ScheduleAppointment | ScheduleAppointmentDetail | null;
   onClose: () => void;
   children?: ReactNode;
 }) {
@@ -120,6 +125,13 @@ export function AppointmentDialog({
             <Fact label="Dokter" icon={UserRound}>
               {appointment.doctor.name}
             </Fact>
+            {"previousVisits" in appointment ? (
+              <Fact label="Pasien" icon={History}>
+                {appointment.previousVisits
+                  ? `Pasien lama · ${appointment.previousVisits} kunjungan selesai sebelumnya`
+                  : "Kunjungan pertama di klinik"}
+              </Fact>
+            ) : null}
             <Fact label="Nomor HP pasien" icon={Smartphone}>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <a
@@ -152,7 +164,13 @@ export function AppointmentDialog({
             {appointment.status === "completed" ? (
               <Fact label="Kontrol berikutnya" icon={CalendarPlus}>
                 {appointment.followUpDate ? (
-                  formatLongDate(appointment.followUpDate)
+                  <span className="flex flex-wrap items-center gap-2">
+                    {formatLongDate(appointment.followUpDate)}
+                    {"followUpStatus" in appointment &&
+                    appointment.followUpStatus ? (
+                      <FollowUpBadge status={appointment.followUpStatus} />
+                    ) : null}
+                  </span>
                 ) : (
                   <span className="text-muted-foreground">
                     Tidak dijadwalkan
@@ -166,6 +184,16 @@ export function AppointmentDialog({
                   Kode {appointment.code} · dibuat{" "}
                   {BOOKED_AT.format(new Date(appointment.createdAt))}
                 </span>
+                {"statusChangedAt" in appointment &&
+                appointment.statusChangedAt ? (
+                  <span className="text-sm text-muted-foreground">
+                    Status diubah{" "}
+                    {BOOKED_AT.format(new Date(appointment.statusChangedAt))}
+                    {appointment.statusChangedBy
+                      ? ` oleh ${appointment.statusChangedBy}`
+                      : ""}
+                  </span>
+                ) : null}
                 <Link
                   to="/janji/$code"
                   params={{ code: appointment.code }}

@@ -1,4 +1,14 @@
-import { and, asc, between, eq, inArray, or, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  between,
+  count,
+  eq,
+  inArray,
+  lt,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   appointments,
@@ -7,6 +17,7 @@ import {
   followUps,
   patients,
   services,
+  user,
 } from "@/db/schema";
 import { addDays, clinicNow, dayOfWeek } from "@/lib/clinic-time";
 
@@ -159,8 +170,43 @@ export async function getScheduleAny(input: {
 
 export type ScheduleWeek = Awaited<ReturnType<typeof getScheduleAny>>;
 
-/** Satu janji temu untuk panel detail papan jadwal. */
+/**
+ * Satu janji temu untuk panel detail papan jadwal, ditambah siapa/kapan
+ * status terakhir diubah, status kontrolnya, dan jumlah kunjungan selesai
+ * pasien sebelum janji ini.
+ */
 export async function getScheduleAppointmentAny(id: string) {
   const [row] = await selectScheduleAppointments(eq(appointments.id, id));
-  return row ? toScheduleAppointment(row) : null;
+  if (!row) return null;
+
+  const [meta] = await db
+    .select({
+      statusChangedAt: appointments.statusChangedAt,
+      statusChangedBy: user.name,
+      followUpStatus: followUps.status,
+    })
+    .from(appointments)
+    .leftJoin(user, eq(user.id, appointments.statusChangedBy))
+    .leftJoin(followUps, eq(followUps.sourceAppointmentId, appointments.id))
+    .where(eq(appointments.id, id))
+    .limit(1);
+
+  const [visits] = await db
+    .select({ total: count() })
+    .from(appointments)
+    .where(
+      and(
+        eq(appointments.patientId, row.patientId),
+        eq(appointments.status, "completed"),
+        lt(appointments.appointmentDate, row.date),
+      ),
+    );
+
+  return {
+    ...toScheduleAppointment(row),
+    statusChangedAt: meta?.statusChangedAt?.toISOString() ?? null,
+    statusChangedBy: meta?.statusChangedBy ?? null,
+    followUpStatus: meta?.followUpStatus ?? null,
+    previousVisits: visits?.total ?? 0,
+  };
 }
