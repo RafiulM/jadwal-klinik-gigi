@@ -1,23 +1,46 @@
 import { Link } from "@tanstack/react-router";
-import { Layers2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 
-export function Brand() {
+// Text wordmark. The clinic has not supplied a logo, so none is invented.
+export function Brand({
+  subtitle = "Area staf",
+  tone = "default",
+  className,
+}: {
+  subtitle?: string;
+  tone?: "default" | "inverse";
+  className?: string;
+}) {
   return (
     <Link
       to="/"
-      className="inline-flex items-center gap-2.5 rounded-sm font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-      aria-label={`${siteConfig.name} home`}
+      className={cn(
+        "inline-flex flex-wrap items-baseline gap-x-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
+        className,
+      )}
+      aria-label={`${siteConfig.name}, halaman booking`}
     >
-      <span className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background">
-        <Layers2 className="size-4" aria-hidden="true" />
-      </span>
-      <span>
+      <span
+        className={cn(
+          "text-lg font-bold tracking-tight",
+          tone === "inverse" ? "text-on-brand-deep" : "text-primary",
+        )}
+      >
         {siteConfig.name}
-        <span className="ml-2 font-normal text-muted-foreground">
-          / starter
-        </span>
       </span>
+      {subtitle ? (
+        <span
+          className={cn(
+            "text-sm",
+            tone === "inverse"
+              ? "text-on-brand-deep-muted"
+              : "text-muted-foreground",
+          )}
+        >
+          {subtitle}
+        </span>
+      ) : null}
     </Link>
   );
 }

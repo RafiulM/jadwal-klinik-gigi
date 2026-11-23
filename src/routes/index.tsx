@@ -1,10 +1,18 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { siteConfig } from "@/config/site";
+import { BookingPage } from "@/features/booking/booking-page";
 
-// The root has no page of its own: the app starts at the signed-in screen.
-// Add a public landing page here only when your product needs one.
+// Halaman utama publik: link booking yang dibuka pasien dari HP, tanpa akun.
 export const Route = createFileRoute("/")({
-  beforeLoad: ({ context }) => {
-    throw redirect({ to: context.session ? siteConfig.homePath : "/sign-in" });
-  },
+  head: () => ({
+    meta: [
+      { title: `Buat janji temu | ${siteConfig.name}` },
+      {
+        name: "description",
+        content:
+          "Pilih layanan, dokter, dan jam yang masih kosong. Tidak perlu daftar akun.",
+      },
+    ],
+  }),
+  component: BookingPage,
 });

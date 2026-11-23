@@ -1,7 +1,7 @@
 {
   "id": "tanstack-postgres",
-  "name": "Base TanStack Postgres",
-  "description": "An AI-friendly foundation with TanStack Start, Drizzle and PostgreSQL.",
+  "name": "Klinik Gigi",
+  "description": "Booking janji temu klinik gigi tanpa antre chat: pasien pilih layanan, dokter, dan jam yang masih kosong.",
   "baseVersion": "0.1.0",
   "framework": "tanstack-start",
   "database": "postgresql"
