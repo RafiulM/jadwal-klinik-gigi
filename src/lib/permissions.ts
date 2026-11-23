@@ -9,6 +9,10 @@ import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 export const statement = {
   ...defaultStatements,
   notes: ["read-any", "delete-any"],
+  // Papan jadwal: membaca janji temu semua dokter.
+  schedule: ["read-any"],
+  // Kelola klinik: layanan, dokter, dan jam praktik.
+  clinic: ["manage"],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -20,6 +24,8 @@ export const roles = {
   admin: ac.newRole({
     ...adminAc.statements,
     notes: ["read-any", "delete-any"],
+    schedule: ["read-any"],
+    clinic: ["manage"],
   }),
 } as const;
 

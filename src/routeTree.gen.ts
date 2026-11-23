@@ -31,10 +31,12 @@ import { Route as ApiDoctorTodayRouteImport } from './routes/api/doctor/today'
 import { Route as ApiFollowUpsIndexRouteImport } from './routes/api/follow-ups/index'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
+import { Route as ApiScheduleIndexRouteImport } from './routes/api/schedule/index'
 import { Route as ApiAdminNotesIndexRouteImport } from './routes/api/admin/notes/index'
 import { Route as ApiAdminNotesIdRouteImport } from './routes/api/admin/notes/$id'
 import { Route as ApiDoctorAppointmentsIdRouteImport } from './routes/api/doctor/appointments/$id'
 import { Route as ApiPatientsIdHistoryRouteImport } from './routes/api/patients/$id/history'
+import { Route as ApiScheduleAppointmentsIdRouteImport } from './routes/api/schedule/appointments/$id'
 import { Route as ApiDoctorAppointmentsIdNoteRouteImport } from './routes/api/doctor/appointments/$id/note'
 
 const IndexRoute = IndexRouteImport.update({
@@ -145,6 +147,11 @@ const ApiNotesIdRoute = ApiNotesIdRouteImport.update({
   path: '/api/notes/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiScheduleIndexRoute = ApiScheduleIndexRouteImport.update({
+  id: '/api/schedule/',
+  path: '/api/schedule/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminNotesIndexRoute = ApiAdminNotesIndexRouteImport.update({
   id: '/api/admin/notes/',
   path: '/api/admin/notes/',
@@ -165,6 +172,12 @@ const ApiPatientsIdHistoryRoute = ApiPatientsIdHistoryRouteImport.update({
   path: '/api/patients/$id/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiScheduleAppointmentsIdRoute =
+  ApiScheduleAppointmentsIdRouteImport.update({
+    id: '/api/schedule/appointments/$id',
+    path: '/api/schedule/appointments/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiDoctorAppointmentsIdNoteRoute =
   ApiDoctorAppointmentsIdNoteRouteImport.update({
     id: '/note',
@@ -193,9 +206,11 @@ export interface FileRoutesByFullPath {
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/follow-ups/': typeof ApiFollowUpsIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/schedule/': typeof ApiScheduleIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
+  '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/notes/': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -220,9 +235,11 @@ export interface FileRoutesByTo {
   '/api/booking': typeof ApiBookingIndexRoute
   '/api/follow-ups': typeof ApiFollowUpsIndexRoute
   '/api/notes': typeof ApiNotesIndexRoute
+  '/api/schedule': typeof ApiScheduleIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
+  '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/notes': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -250,9 +267,11 @@ export interface FileRoutesById {
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/follow-ups/': typeof ApiFollowUpsIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/schedule/': typeof ApiScheduleIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
+  '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/notes/': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -279,9 +298,11 @@ export interface FileRouteTypes {
     | '/api/booking/'
     | '/api/follow-ups/'
     | '/api/notes/'
+    | '/api/schedule/'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
     | '/api/patients/$id/history'
+    | '/api/schedule/appointments/$id'
     | '/api/admin/notes/'
     | '/api/doctor/appointments/$id/note'
   fileRoutesByTo: FileRoutesByTo
@@ -306,9 +327,11 @@ export interface FileRouteTypes {
     | '/api/booking'
     | '/api/follow-ups'
     | '/api/notes'
+    | '/api/schedule'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
     | '/api/patients/$id/history'
+    | '/api/schedule/appointments/$id'
     | '/api/admin/notes'
     | '/api/doctor/appointments/$id/note'
   id:
@@ -335,9 +358,11 @@ export interface FileRouteTypes {
     | '/api/booking/'
     | '/api/follow-ups/'
     | '/api/notes/'
+    | '/api/schedule/'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
     | '/api/patients/$id/history'
+    | '/api/schedule/appointments/$id'
     | '/api/admin/notes/'
     | '/api/doctor/appointments/$id/note'
   fileRoutesById: FileRoutesById
@@ -357,9 +382,11 @@ export interface RootRouteChildren {
   ApiBookingIndexRoute: typeof ApiBookingIndexRoute
   ApiFollowUpsIndexRoute: typeof ApiFollowUpsIndexRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
+  ApiScheduleIndexRoute: typeof ApiScheduleIndexRoute
   ApiAdminNotesIdRoute: typeof ApiAdminNotesIdRoute
   ApiDoctorAppointmentsIdRoute: typeof ApiDoctorAppointmentsIdRouteWithChildren
   ApiPatientsIdHistoryRoute: typeof ApiPatientsIdHistoryRoute
+  ApiScheduleAppointmentsIdRoute: typeof ApiScheduleAppointmentsIdRoute
   ApiAdminNotesIndexRoute: typeof ApiAdminNotesIndexRoute
 }
 
@@ -519,6 +546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNotesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/schedule/': {
+      id: '/api/schedule/'
+      path: '/api/schedule'
+      fullPath: '/api/schedule/'
+      preLoaderRoute: typeof ApiScheduleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/notes/': {
       id: '/api/admin/notes/'
       path: '/api/admin/notes'
@@ -545,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/api/patients/$id/history'
       fullPath: '/api/patients/$id/history'
       preLoaderRoute: typeof ApiPatientsIdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/schedule/appointments/$id': {
+      id: '/api/schedule/appointments/$id'
+      path: '/api/schedule/appointments/$id'
+      fullPath: '/api/schedule/appointments/$id'
+      preLoaderRoute: typeof ApiScheduleAppointmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/doctor/appointments/$id/note': {
@@ -620,9 +661,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBookingIndexRoute: ApiBookingIndexRoute,
   ApiFollowUpsIndexRoute: ApiFollowUpsIndexRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,
+  ApiScheduleIndexRoute: ApiScheduleIndexRoute,
   ApiAdminNotesIdRoute: ApiAdminNotesIdRoute,
   ApiDoctorAppointmentsIdRoute: ApiDoctorAppointmentsIdRouteWithChildren,
   ApiPatientsIdHistoryRoute: ApiPatientsIdHistoryRoute,
+  ApiScheduleAppointmentsIdRoute: ApiScheduleAppointmentsIdRoute,
   ApiAdminNotesIndexRoute: ApiAdminNotesIndexRoute,
 }
 export const routeTree = rootRouteImport
