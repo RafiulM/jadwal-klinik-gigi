@@ -26,3 +26,10 @@ export const updateAppointmentSchema = z
   });
 
 export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
+
+// PUT /api/doctor/appointments/:id/note — string kosong menghapus catatan.
+export const visitNoteSchema = z
+  .object({
+    notes: z.string().trim().max(2000, "Catatan maksimal 2000 karakter."),
+  })
+  .strict();

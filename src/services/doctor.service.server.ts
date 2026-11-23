@@ -134,7 +134,7 @@ export class AppointmentUpdateError extends Error {
 /**
  * Dokter menandai hasil kunjungan miliknya: selesai, tidak datang, atau
  * dikembalikan ke menunggu; sekaligus menyimpan catatan. Kunjungan di masa
- * depan tidak bisa ditandai selesai/tidak datang.
+ * depan tidak bisa ditandai selesai/tidak datang dan belum bisa diberi catatan.
  */
 export async function updateDoctorAppointment(
   doctorId: string,
@@ -165,11 +165,43 @@ export async function updateDoctorAppointment(
     changes.statusChangedAt = new Date();
     changes.statusChangedBy = userId;
   }
-  if (input.notes !== undefined) changes.notes = input.notes || null;
+  if (input.notes !== undefined) {
+    if (current.date > clinicNow().date)
+      throw new AppointmentUpdateError("NOT_STARTED");
+    changes.notes = input.notes || null;
+  }
 
   if (Object.keys(changes).length)
     await db.update(appointments).set(changes).where(own);
 
   const [row] = await selectAppointments(own);
   return toAppointment(row);
+}
+
+/** Catatan kunjungan milik dokter: isi catatan dan apakah sudah bisa diisi. */
+export async function getDoctorVisitNote(
+  doctorId: string,
+  appointmentId: string,
+) {
+  const [row] = await db
+    .select({
+      notes: appointments.notes,
+      date: appointments.appointmentDate,
+      updatedAt: appointments.updatedAt,
+    })
+    .from(appointments)
+    .where(
+      and(
+        eq(appointments.id, appointmentId),
+        eq(appointments.doctorId, doctorId),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return {
+    appointmentId,
+    notes: row.notes ?? "",
+    editable: row.date <= clinicNow().date,
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
