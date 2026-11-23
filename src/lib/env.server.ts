@@ -27,6 +27,16 @@ const schema = z.object({
       );
     }, "Use an origin, e.g. http://localhost:3000.")
     .default("http://localhost:3000"),
+  // Email (dipisah koma) yang otomatis jadi admin + pemilik saat mendaftar.
+  CLINIC_ADMIN_EMAILS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      (value ?? "")
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   // Kunci bersama untuk n8n memanggil /api/integrations/n8n/*. Kosong = mati.
   N8N_API_KEY: z.preprocess(
     (value) => (value === "" ? undefined : value),
@@ -39,4 +49,5 @@ export const env = schema.parse({
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
   N8N_API_KEY: process.env.N8N_API_KEY,
+  CLINIC_ADMIN_EMAILS: process.env.CLINIC_ADMIN_EMAILS,
 });

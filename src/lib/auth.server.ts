@@ -21,6 +21,19 @@ export const auth = betterAuth({
     // Add an email provider before enabling verification or password recovery.
     requireEmailVerification: false,
   },
+  // Akun pertama klinik di server baru: email di CLINIC_ADMIN_EMAILS otomatis
+  // mendapat peran admin dan pemilik saat mendaftar. Peran lain tetap diatur
+  // lewat Kelola klinik (dokter) atau npm run role:set.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) =>
+          env.CLINIC_ADMIN_EMAILS.includes(user.email.trim().toLowerCase())
+            ? { data: { ...user, role: "admin,pemilik" } }
+            : undefined,
+      },
+    },
+  },
   plugins: [
     // Roles come from the access control in lib/permissions.ts. New accounts get
     // DEFAULT_ROLE; `role` is not accepted from signup input, so nobody can

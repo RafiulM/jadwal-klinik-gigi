@@ -1,0 +1,60 @@
+# Deploy lengkap di Coolify (build pack: Docker Compose).
+# Coolify membuat sendiri semua rahasia lewat variabel "magic" SERVICE_*:
+# password database, BETTER_AUTH_SECRET, dan N8N_API_KEY tidak perlu diketik.
+# Atur domain layanan "app" di Coolify (mis. https://klinik.example.com);
+# SERVICE_URL_APP otomatis mengikuti domain itu.
+#
+# Urutan: db sehat → migrate (migrasi + data awal klinik bila kosong) → app.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_64_POSTGRES}
+      POSTGRES_DB: klinik
+    volumes:
+      - klinik-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d klinik"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    environment:
+      DATABASE_URL: postgresql://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_64_POSTGRES}@db:5432/klinik
+      # true = isi layanan, dokter contoh, dan jam praktik bila database kosong.
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+    command:
+      - sh
+      - -c
+      - node scripts/migrate.mjs && if [ "$$SEED_SAMPLE_DATA" = "true" ]; then node scripts/seed-clinic.mjs; fi
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    exclude_from_hc: true
+
+  app:
+    build:
+      context: .
+      target: runner
+    environment:
+      SERVICE_URL_APP_3000:
+      DATABASE_URL: postgresql://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_64_POSTGRES}@db:5432/klinik
+      BETTER_AUTH_SECRET: ${SERVICE_BASE64_64_AUTH}
+      BETTER_AUTH_URL: ${SERVICE_URL_APP}
+      N8N_API_KEY: ${SERVICE_HEX_64_N8N}
+      CLINIC_ADMIN_EMAILS: ${CLINIC_ADMIN_EMAILS:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  klinik-postgres:

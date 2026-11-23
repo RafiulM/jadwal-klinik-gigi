@@ -67,3 +67,17 @@ Use PostgreSQL backups or your provider's backup service and test restoration. D
 Account emails are not verified by the base. Add an email provider for verification and password recovery when needed. Reassess shared auth rate limiting when scaling to multiple app instances.
 
 References: [Drizzle PostgreSQL](https://orm.drizzle.team/docs/get-started-postgresql), [node-postgres pooling](https://node-postgres.com/features/pooling), [Better Auth Drizzle adapter](https://better-auth.com/docs/adapters/drizzle), [PostgreSQL Docker image](https://hub.docker.com/_/postgres).
+
+## Deploy di Coolify
+
+`docker-compose.coolify.yaml` berisi PostgreSQL, layanan migrasi sekali jalan, dan aplikasi. Semua rahasia dibuat Coolify lewat variabel magic `SERVICE_*`, jadi tidak ada password atau secret yang perlu diketik.
+
+1. Di Coolify: **New Resource → Public Repository** (atau GitHub App), isi URL repo, pilih build pack **Docker Compose**, dan lokasi compose `/docker-compose.coolify.yaml`.
+2. Atur domain layanan `app` (mis. `https://klinik.example.com`). `BETTER_AUTH_URL` otomatis mengikuti domain ini.
+3. Opsional di **Environment Variables**:
+   - `CLINIC_ADMIN_EMAILS` — email (dipisah koma) yang otomatis menjadi admin + pemilik saat mendaftar di `/sign-up`.
+   - `SEED_SAMPLE_DATA=false` bila tidak ingin layanan dan dokter contoh.
+4. Deploy. Urutannya: database sehat → `migrate` menjalankan migrasi (dan data awal bila database kosong) → `app` berjalan.
+5. Untuk n8n, salin nilai `SERVICE_HEX_64_N8N` dari Environment Variables ke credential n8n (lihat `docs/n8n.md`).
+
+`exclude_from_hc` pada layanan `migrate` khusus Coolify; untuk mencoba compose ini di luar Coolify, hapus baris itu dan sediakan sendiri nilai variabel `SERVICE_*`.
