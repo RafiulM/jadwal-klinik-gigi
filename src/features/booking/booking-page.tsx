@@ -72,7 +72,7 @@ export function BookingPage() {
   const [code, setCode] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Slot yang keburu diambil pasien lain saat konfirmasi.
-  const [lostSlots] = useState<string[]>([]);
+  const [lostSlots, setLostSlots] = useState<string[]>([]);
   const [conflictTime, setConflictTime] = useState<string | null>(null);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -168,7 +168,13 @@ export function BookingPage() {
         setStatus("done");
         return;
       }
+      // Slot keburu diambil pasien lain: tandai penuh dan kembali ke langkah jadwal.
+      const key = `${booking.doctorId}|${booking.dateId}|${booking.time}`;
+      setLostSlots((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      setConflictTime(booking.time);
+      setBooking((prev) => ({ ...prev, time: null }));
       setStatus("idle");
+      setStep(2);
     } catch {
       setStatus("idle");
       setSubmitError("Janji temu belum tersimpan karena gangguan koneksi. Coba lagi sebentar.");
@@ -234,7 +240,12 @@ export function BookingPage() {
               aria-label="Formulir booking"
               className={cn("grid min-w-0 gap-6 rounded-xl border bg-card px-4 pt-5 md:p-8", cardShadow)}
             >
-              <Stepper current={step} />
+              <Stepper
+                current={step}
+                onJump={(target) => {
+                  if (status !== "submitting" && target < step) setStep(target);
+                }}
+              />
 
               {step === 0 ? (
                 <StepService
@@ -357,7 +368,13 @@ function BookingHero({ showIntro }: { showIntro: boolean }) {
   );
 }
 
-function Stepper({ current }: { current: number }) {
+function Stepper({
+  current,
+  onJump,
+}: {
+  current: number;
+  onJump: (step: number) => void;
+}) {
   return (
     <ol aria-label="Langkah booking" className="grid grid-cols-5">
       {STEPS.map((s, i) => {
@@ -377,26 +394,45 @@ function Stepper({ current }: { current: number }) {
                 )}
               />
             ) : null}
-            <span
-              aria-hidden="true"
-              className={cn(
-                "relative z-10 inline-flex size-8 items-center justify-center rounded-full text-sm font-bold",
-                state === "todo" && "bg-card text-muted-foreground ring-2 ring-border-strong ring-inset",
-                state === "done" && "bg-primary-soft text-primary ring-2 ring-primary ring-inset",
-                state === "current" && "bg-primary text-primary-foreground ring-4 ring-primary-soft",
-              )}
-            >
-              {state === "done" ? <CircleCheck className="size-4" /> : i + 1}
-            </span>
-            <span
-              className={cn(
-                "text-center text-xs leading-tight",
-                state === "current" ? "font-bold text-foreground" : "font-medium text-muted-foreground",
-              )}
-            >
-              {state === "done" ? <span className="sr-only">Selesai: </span> : null}
-              {s.label}
-            </span>
+            {state === "done" ? (
+              <button
+                type="button"
+                onClick={() => onJump(i)}
+                className="group relative z-10 grid justify-items-center gap-2 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-flex size-8 items-center justify-center rounded-full bg-primary-soft text-primary ring-2 ring-primary ring-inset transition-colors group-hover:bg-primary group-hover:text-primary-foreground"
+                >
+                  <CircleCheck className="size-4" />
+                </span>
+                <span className="text-center text-xs leading-tight font-medium text-muted-foreground underline-offset-2 group-hover:text-primary group-hover:underline">
+                  <span className="sr-only">Selesai, ubah: </span>
+                  {s.label}
+                </span>
+              </button>
+            ) : (
+              <>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "relative z-10 inline-flex size-8 items-center justify-center rounded-full text-sm font-bold",
+                    state === "todo" && "bg-card text-muted-foreground ring-2 ring-border-strong ring-inset",
+                    state === "current" && "bg-primary text-primary-foreground ring-4 ring-primary-soft",
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span
+                  className={cn(
+                    "text-center text-xs leading-tight",
+                    state === "current" ? "font-bold text-foreground" : "font-medium text-muted-foreground",
+                  )}
+                >
+                  {s.label}
+                </span>
+              </>
+            )}
           </li>
         );
       })}

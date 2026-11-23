@@ -166,6 +166,8 @@ export function bookingCode(dateId: string, time: string) {
   return `JK-${dateId.slice(8, 10)}${dateId.slice(5, 7)}-${time.replace(".", "")}`;
 }
 
+let raceSlotUsed = false;
+
 /** Simulasi POST /api/booking sampai API asli tersedia. */
 export function submitBookingMock(input: {
   doctorId: string;
@@ -174,6 +176,12 @@ export function submitBookingMock(input: {
 }): Promise<{ ok: true; code: string } | { ok: false; reason: "slot_taken" }> {
   return new Promise((resolve) => {
     setTimeout(() => {
+      const key = `${input.doctorId}|${input.dateId}|${input.time}`;
+      if (key === RACE_SLOT && !raceSlotUsed) {
+        raceSlotUsed = true;
+        resolve({ ok: false, reason: "slot_taken" });
+        return;
+      }
       resolve({ ok: true, code: bookingCode(input.dateId, input.time) });
     }, 900);
   });
