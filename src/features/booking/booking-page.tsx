@@ -23,7 +23,9 @@ import {
 } from "./mock-data";
 import { StepHeading } from "./step-heading";
 import { StepDoctor } from "./step-doctor";
+import { StepPatient } from "./step-patient";
 import { StepSchedule } from "./step-schedule";
+import { nameError, phoneError } from "./patient-validation";
 import { StepService } from "./step-service";
 
 export const STEPS = [
@@ -58,7 +60,10 @@ export function BookingPage() {
   // Slot yang keburu diambil pasien lain saat konfirmasi (dipakai di langkah konfirmasi).
   const [lostSlots] = useState<string[]>([]);
   const [conflictTime, setConflictTime] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ name: false, phone: false });
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
   const lastStepRef = useRef(step);
 
   // Pindahkan fokus ke judul langkah saat berganti langkah (bukan saat muat awal).
@@ -127,6 +132,18 @@ export function BookingPage() {
   const takenSlots =
     doctor && date ? takenFor(doctor.id, date.id, lostSlots) : [];
 
+  const nameProblem = nameError(booking.name);
+  const phoneProblem = phoneError(booking.phone);
+
+  function goNext() {
+    if (step === 3) {
+      setTouched({ name: true, phone: true });
+      if (nameProblem) return nameRef.current?.focus();
+      if (phoneProblem) return phoneRef.current?.focus();
+    }
+    setStep((s) => Math.min(STEPS.length - 1, s + 1));
+  }
+
   const doctorsForService = booking.serviceId
     ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
     : [];
@@ -189,6 +206,20 @@ export function BookingPage() {
                 conflictTime={conflictTime}
                 headingRef={headingRef}
               />
+            ) : step === 3 ? (
+              <StepPatient
+                name={booking.name}
+                phone={booking.phone}
+                nameError={touched.name ? nameProblem : ""}
+                phoneError={touched.phone ? phoneProblem : ""}
+                onName={(name) => setBooking((prev) => ({ ...prev, name }))}
+                onPhone={(phone) => setBooking((prev) => ({ ...prev, phone }))}
+                onBlurName={() => setTouched((t) => ({ ...t, name: true }))}
+                onBlurPhone={() => setTouched((t) => ({ ...t, phone: true }))}
+                nameRef={nameRef}
+                phoneRef={phoneRef}
+                headingRef={headingRef}
+              />
             ) : (
               <StepPlaceholder headingRef={headingRef} step={step} />
             )}
@@ -198,9 +229,7 @@ export function BookingPage() {
               canNext={canNext}
               hint={hint}
               onBack={() => setStep((s) => Math.max(0, s - 1))}
-              onNext={() =>
-                setStep((s) => Math.min(STEPS.length - 1, s + 1))
-              }
+              onNext={goNext}
             />
           </section>
 
