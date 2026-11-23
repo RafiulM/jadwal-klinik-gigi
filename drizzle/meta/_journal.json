@@ -50,6 +50,13 @@
       "when": 1795432108648,
       "tag": "0006_follow_up_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795433806119,
+      "tag": "0007_appointments_schedule",
+      "breakpoints": true
     }
   ]
 }

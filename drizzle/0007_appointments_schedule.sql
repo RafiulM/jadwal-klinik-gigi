@@ -1,0 +1,2 @@
+CREATE INDEX "appointments_date_doctor_idx" ON "appointments" USING btree ("appointment_date","doctor_id");--> statement-breakpoint
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_time_check" CHECK ("appointments"."end_time" > "appointments"."start_time");

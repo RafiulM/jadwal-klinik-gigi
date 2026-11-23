@@ -69,9 +69,19 @@ export const appointments = pgTable(
     index("appointments_date_idx").on(table.appointmentDate, table.startTime),
     index("appointments_patient_idx").on(table.patientId),
     index("appointments_status_idx").on(table.status, table.appointmentDate),
+    // Papan jadwal & rekap membaca janji per rentang tanggal lalu per dokter.
+    index("appointments_date_doctor_idx").on(
+      table.appointmentDate,
+      table.doctorId,
+    ),
     check(
       "appointments_notes_length",
       sql`${table.notes} is null or char_length(${table.notes}) <= 2000`,
+    ),
+    // Jam selesai selalu setelah jam mulai (papan jadwal memakai durasinya).
+    check(
+      "appointments_time_check",
+      sql`${table.endTime} > ${table.startTime}`,
     ),
     check(
       "appointments_completed_at_status",
