@@ -7,6 +7,7 @@ import {
   smallint,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -39,5 +40,11 @@ export const services = pgTable(
       "services_follow_up_days_check",
       sql`${table.defaultFollowUpDays} is null or ${table.defaultFollowUpDays} between 1 and 730`,
     ),
+    check(
+      "services_duration_check",
+      sql`${table.estimatedDurationMinutes} between 5 and 240`,
+    ),
+    // Nama layanan unik tanpa membedakan huruf besar/kecil.
+    uniqueIndex("services_name_lower_idx").on(sql`lower(${table.name})`),
   ],
 );

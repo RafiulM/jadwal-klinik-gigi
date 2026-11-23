@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
+import { index, pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
 import { doctors } from "./doctors";
 import { services } from "./services";
 
@@ -13,5 +13,9 @@ export const doctorServices = pgTable(
       .notNull()
       .references(() => services.id, { onDelete: "cascade" }),
   },
-  (table) => [primaryKey({ columns: [table.doctorId, table.serviceId] })],
+  (table) => [
+    primaryKey({ columns: [table.doctorId, table.serviceId] }),
+    // Booking & Kelola klinik mencari dokter berdasarkan layanan.
+    index("doctor_services_service_idx").on(table.serviceId),
+  ],
 );

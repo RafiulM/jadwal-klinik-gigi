@@ -57,6 +57,13 @@
       "when": 1795433806119,
       "tag": "0007_appointments_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795434053830,
+      "tag": "0008_kelola_klinik",
+      "breakpoints": true
     }
   ]
 }
