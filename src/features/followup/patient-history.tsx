@@ -2,7 +2,7 @@ import { CalendarPlus, History, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { displayTime, formatLongDate } from "@/features/booking/format";
-import type { FollowUp, FollowUpStatus, HistoryVisit } from "./mock-data";
+import type { FollowUp, FollowUpStatus, HistoryVisit } from "./api";
 import { DueHint, FollowUpBadge } from "./follow-up-status";
 
 /**

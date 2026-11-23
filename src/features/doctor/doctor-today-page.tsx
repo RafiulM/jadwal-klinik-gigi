@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Calendar,
   CalendarOff,
+  CircleAlert,
   CircleCheck,
   RotateCcw,
   Search,
@@ -10,7 +11,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge, type AppointmentStatus } from "@/components/status-badge";
-import { TODAY, TODAY_APPOINTMENTS, type TodayAppointment } from "./mock-data";
+import { messageOf } from "@/lib/api-client";
+import { useLoad } from "@/lib/use-load";
+import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
+import {
+  doctorApi,
+  type AppointmentUpdate,
+  type DoctorDay,
+  type TodayAppointment,
+} from "./api";
 import { MarkedVisit, PendingVisitActions } from "./visit-actions";
 import { NoteField, SavedNote } from "./visit-note";
 import {
@@ -20,12 +29,7 @@ import {
 import { SavedFollowUp } from "@/features/followup/saved-follow-up";
 import { FollowUpSuggestion } from "@/features/followup/follow-up-suggestion";
 import { PatientHistory } from "@/features/followup/patient-history";
-import {
-  FOLLOW_UPS,
-  HISTORY,
-  type FollowUp,
-  type HistoryVisit,
-} from "@/features/followup/mock-data";
+import { followUpApi, upcomingFollowUp } from "@/features/followup/api";
 import { formatLongDate } from "@/features/booking/format";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
@@ -76,9 +80,26 @@ export function PatientAvatar({
 }
 
 export function DoctorTodayPage() {
-  const [appointments, setAppointments] =
-    useState<TodayAppointment[]>(TODAY_APPOINTMENTS);
+  const [day, reload] = useLoad("today", () => doctorApi.today());
+  if (day.state === "ready") return <DoctorDayView day={day.data} />;
+  return (
+    <div className="grid gap-4 px-4 pt-5 pb-10 md:p-8 lg:px-10">
+      <h1 className="text-2xl font-bold tracking-tight">Jadwal hari ini</h1>
+      {day.state === "error" ? (
+        <ErrorNote message={day.message} onRetry={reload} />
+      ) : (
+        <LoadingNote>Memuat jadwal hari ini…</LoadingNote>
+      )}
+    </div>
+  );
+}
+
+function DoctorDayView({ day }: { day: DoctorDay }) {
+  const [appointments, setAppointments] = useState<TodayAppointment[]>(
+    day.appointments,
+  );
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState(false);
   const [followUpDrafts, setFollowUpDrafts] = useState<Record<string, string>>(
@@ -89,7 +110,10 @@ export function DoctorTodayPage() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusHeadingRef = useRef(false);
   const [selectedId, setSelectedId] = useState(
-    () => TODAY_APPOINTMENTS.find((a) => a.status === "scheduled")?.id ?? "",
+    () =>
+      day.appointments.find((a) => a.status === "scheduled")?.id ??
+      day.appointments[0]?.id ??
+      "",
   );
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("semua");
   const [query, setQuery] = useState("");
@@ -144,141 +168,105 @@ export function DoctorTodayPage() {
     headingRef.current?.focus();
   }, [selected?.id, selected?.status]);
 
-  // Simulasi PATCH status sampai API tersedia di layer backend.
+  // Kirim perubahan ke API lalu ganti baris janji temu dengan versi server.
+  async function applyUpdate(
+    input: AppointmentUpdate,
+    success: (updated: TodayAppointment) => string,
+  ) {
+    if (!selected) return false;
+    setError("");
+    try {
+      const updated = await doctorApi.update(selected.id, input);
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === updated.id ? updated : a)),
+      );
+      setMessage(success(updated));
+      return true;
+    } catch (failure) {
+      setMessage("");
+      setError(messageOf(failure));
+      return false;
+    }
+  }
+
   async function changeStatus(
     status: AppointmentStatus,
     kind: "done" | "no_show" | "undo",
   ) {
     if (!selected || busy) return;
-    const followUp = followUpDrafts[selected.id] ?? selected.followUpDate;
-    if (status === "completed" && followUpDateError(followUp, TODAY.date)) {
+    const followUp = (
+      followUpDrafts[selected.id] ?? selected.followUpDate
+    ).trim();
+    if (status === "completed" && followUpDateError(followUp, day.date)) {
       followUpRef.current?.focus();
       return;
     }
     setBusy(kind);
-    await new Promise((resolve) => setTimeout(resolve, 400));
     const note = (noteDrafts[selected.id] ?? selected.notes).trim();
-    setAppointments((prev) =>
-      prev.map((a) =>
-        a.id === selected.id
-          ? {
-              ...a,
-              status,
-              notes: status === "completed" ? note : a.notes,
-              followUpDate: status === "completed" ? followUp : a.followUpDate,
-            }
-          : a,
-      ),
-    );
-    focusHeadingRef.current = true;
-    setMessage(
+    const name = selected.patient.name;
+    const ok = await applyUpdate(
       status === "completed"
-        ? `${selected.patient.name} ditandai selesai.${followUp ? ` Kontrol berikutnya ${formatLongDate(followUp)} tercatat.` : ""}`
-        : status === "no_show"
-          ? `${selected.patient.name} ditandai tidak datang.`
-          : `Tanda untuk ${selected.patient.name} dibatalkan. Status kembali menunggu.`,
+        ? { status, notes: note, followUpDate: followUp || null }
+        : { status },
+      (updated) =>
+        status === "completed"
+          ? `${name} ditandai selesai.${updated.followUpDate ? ` Kontrol berikutnya ${formatLongDate(updated.followUpDate)} tercatat.` : ""}`
+          : status === "no_show"
+            ? `${name} ditandai tidak datang.`
+            : `Tanda untuk ${name} dibatalkan. Status kembali menunggu.`,
     );
+    if (ok) focusHeadingRef.current = true;
     setBusy(null);
   }
 
-  // Simulasi PATCH catatan sampai API tersedia.
   async function saveNote(note: string) {
-    if (!selected) return;
+    if (!selected) return false;
     setSavingNote(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === selected.id ? { ...a, notes: note } : a)),
+    const name = selected.patient.name;
+    const ok = await applyUpdate(
+      { notes: note },
+      () => `Catatan untuk ${name} disimpan.`,
     );
-    setNoteDrafts((prev) => ({ ...prev, [selected.id]: note }));
-    setMessage(`Catatan untuk ${selected.patient.name} disimpan.`);
+    if (ok) setNoteDrafts((prev) => ({ ...prev, [selected.id]: note }));
     setSavingNote(false);
+    return ok;
   }
 
-  // Simulasi PATCH tanggal kontrol sampai API tersedia.
   async function saveFollowUp(date: string) {
-    if (!selected) return;
+    if (!selected) return false;
     setSavingNote(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setAppointments((prev) =>
-      prev.map((a) =>
-        a.id === selected.id ? { ...a, followUpDate: date } : a,
-      ),
+    const name = selected.patient.name;
+    const ok = await applyUpdate({ followUpDate: date || null }, (updated) =>
+      updated.followUpDate
+        ? `Kontrol berikutnya ${name}: ${formatLongDate(updated.followUpDate)}.`
+        : `Jadwal kontrol ${name} dikosongkan.`,
     );
-    setFollowUpDrafts((prev) => ({ ...prev, [selected.id]: date }));
-    setMessage(
-      date
-        ? `Kontrol berikutnya ${selected.patient.name}: ${formatLongDate(date)}.`
-        : `Jadwal kontrol ${selected.patient.name} dikosongkan.`,
-    );
+    if (ok) setFollowUpDrafts((prev) => ({ ...prev, [selected.id]: date }));
     setSavingNote(false);
+    return ok;
   }
 
   function goToPatient(id: string) {
     focusHeadingRef.current = true;
     setSelectedId(id);
     setMessage("");
+    setError("");
   }
 
-  // Riwayat: kunjungan sebelumnya + hasil kunjungan hari ini bila sudah ditandai.
-  const history: HistoryVisit[] = selected
+  // Riwayat pasien terpilih dimuat ulang setiap hasil kunjungannya berubah.
+  const historyKey = selected
     ? [
-        ...(selected.status !== "scheduled"
-          ? [
-              {
-                id: `today-${selected.id}`,
-                date: TODAY.date,
-                time: selected.time,
-                service: selected.service.name,
-                doctor: TODAY.doctor.name,
-                status: selected.status,
-                notes: selected.notes,
-                followUpDate: selected.followUpDate || null,
-              },
-            ]
-          : []),
-        ...(HISTORY[selected.patient.id] ?? []).filter(
-          (v) => v.date !== TODAY.date,
-        ),
-      ]
-    : [];
-  // Kontrol milik pasien: kontrol baru dari kunjungan hari ini (bila tanggal
-  // sudah ditetapkan) + kontrol lain yang asalnya bukan kunjungan hari ini.
-  const todayVisitIds = new Set(
-    (selected ? (HISTORY[selected.patient.id] ?? []) : [])
-      .filter((v) => v.date === TODAY.date)
-      .map((v) => v.id),
-  );
-  const patientFollowUps: FollowUp[] = selected
-    ? [
-        ...(selected.status === "completed" && selected.followUpDate
-          ? [
-              {
-                id: `kontrol-${selected.id}`,
-                dueDate: selected.followUpDate,
-                status: "pending" as const,
-                notes: "",
-                service: selected.service,
-                doctor: { id: "rina", name: TODAY.doctor.name },
-                patient: selected.patient,
-                sourceVisitId: `today-${selected.id}`,
-              },
-            ]
-          : []),
-        ...FOLLOW_UPS.filter(
-          (f) =>
-            f.patient.id === selected.patient.id &&
-            !(f.sourceVisitId && todayVisitIds.has(f.sourceVisitId)),
-        ),
-      ]
-    : [];
-  const upcoming = patientFollowUps.find((f) => f.status !== "done");
-  const nextFollowUp = upcoming
-    ? {
-        date: upcoming.dueDate,
-        service: upcoming.service.name,
-        status: upcoming.status,
-      }
+        selected.patient.id,
+        selected.status,
+        selected.notes,
+        selected.followUpDate,
+      ].join("|")
     : null;
+  const [history, reloadHistory] = useLoad(historyKey, (key) =>
+    followUpApi.history(key.split("|")[0]),
+  );
+  const upcoming =
+    history.state === "ready" ? upcomingFollowUp(history.data.followUps) : null;
 
   function resetFilters() {
     setFilter("semua");
@@ -296,7 +284,7 @@ export function DoctorTodayPage() {
           <div className="grid gap-1">
             <p className="flex items-center gap-2 text-sm font-medium text-on-brand-deep-muted">
               <Calendar className="size-4" aria-hidden="true" />
-              Senin, 23 November 2026
+              {formatLongDate(day.date)}
             </p>
             <h1
               id="dokter-title"
@@ -305,7 +293,10 @@ export function DoctorTodayPage() {
               Jadwal hari ini
             </h1>
             <p className="text-sm text-on-brand-deep-muted">
-              {TODAY.doctor.name} · praktik {TODAY.doctor.hours}
+              {day.doctor.name} ·{" "}
+              {day.doctor.hours
+                ? `praktik ${displayTime(day.doctor.hours.start)}–${displayTime(day.doctor.hours.end)}`
+                : "tidak ada jam praktik hari ini"}
             </p>
           </div>
           {nextUp ? (
@@ -466,12 +457,13 @@ export function DoctorTodayPage() {
                         onClick={() => {
                           setSelectedId(a.id);
                           setMessage("");
+                          setError("");
                           setView("detail");
                         }}
                         className={cn(
                           "grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-md border bg-card p-3 text-left sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] transition-[border-color,box-shadow] hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
                           current &&
-                            "border-primary bg-primary-50 shadow-[inset_3px_0_0_var(--color-primary)]",
+                            "border-primary bg-primary-50 ring-1 ring-primary",
                         )}
                       >
                         <span
@@ -591,6 +583,18 @@ export function DoctorTodayPage() {
               >
                 {message}
               </p>
+              {error ? (
+                <p
+                  role="alert"
+                  className="flex items-start gap-2 rounded-md bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+                >
+                  <CircleAlert
+                    className="mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {error}
+                </p>
+              ) : null}
 
               {selected.status === "scheduled" ? (
                 <PendingVisitActions
@@ -609,7 +613,7 @@ export function DoctorTodayPage() {
                   />
                   <FollowUpDateField
                     value={followUpDrafts[selected.id] ?? selected.followUpDate}
-                    today={TODAY.date}
+                    today={day.date}
                     inputRef={followUpRef}
                     showError
                     onChange={(value) =>
@@ -622,7 +626,7 @@ export function DoctorTodayPage() {
                     <FollowUpSuggestion
                       serviceName={selected.service.name}
                       intervalDays={selected.service.followUpDays}
-                      today={TODAY.date}
+                      today={day.date}
                       value={
                         followUpDrafts[selected.id] ?? selected.followUpDate
                       }
@@ -655,23 +659,51 @@ export function DoctorTodayPage() {
                     <SavedFollowUp
                       key={`${selected.id}-kontrol`}
                       date={selected.followUpDate}
-                      today={TODAY.date}
+                      today={day.date}
                       serviceName={selected.service.name}
                       intervalDays={selected.service.followUpDays}
                       saving={savingNote}
                       onSave={saveFollowUp}
+                      lockedReason={
+                        selected.followUpStatus === "booked"
+                          ? "Pasien sudah booking kontrol ini."
+                          : selected.followUpStatus === "done"
+                            ? "Kontrol ini sudah dijalani."
+                            : undefined
+                      }
                     />
                   ) : null}
                 </MarkedVisit>
               )}
 
               <div className="border-t pt-5">
-                <PatientHistory
-                  visits={history}
-                  nextFollowUp={nextFollowUp}
-                  followUps={patientFollowUps}
-                  today={TODAY.date}
-                />
+                {history.state === "ready" ? (
+                  <PatientHistory
+                    visits={history.data.visits.filter(
+                      // Kunjungan yang sedang dibuka belum jadi riwayat.
+                      (v) =>
+                        !(v.id === selected.id && v.status === "scheduled"),
+                    )}
+                    nextFollowUp={
+                      upcoming
+                        ? {
+                            date: upcoming.dueDate,
+                            service: upcoming.service.name,
+                            status: upcoming.status,
+                          }
+                        : null
+                    }
+                    followUps={history.data.followUps}
+                    today={day.date}
+                  />
+                ) : history.state === "error" ? (
+                  <ErrorNote
+                    message={history.message}
+                    onRetry={reloadHistory}
+                  />
+                ) : (
+                  <LoadingNote>Memuat riwayat pasien…</LoadingNote>
+                )}
               </div>
             </section>
           ) : null}

@@ -6,7 +6,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FollowUpStatus } from "./mock-data";
+import type { FollowUpStatus } from "./api";
 
 export const FOLLOW_UP_STATUS: Record<
   FollowUpStatus,

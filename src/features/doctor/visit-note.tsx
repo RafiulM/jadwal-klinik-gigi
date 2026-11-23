@@ -49,7 +49,8 @@ export function SavedNote({
 }: {
   note: string;
   saving: boolean;
-  onSave: (note: string) => Promise<void> | void;
+  /** Kembalikan false bila gagal agar draf tetap terbuka. */
+  onSave: (note: string) => Promise<boolean | void> | boolean | void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note);
@@ -63,8 +64,7 @@ export function SavedNote({
             variant="primary"
             disabled={saving}
             onClick={async () => {
-              await onSave(draft.trim());
-              setEditing(false);
+              if ((await onSave(draft.trim())) !== false) setEditing(false);
             }}
           >
             {saving ? "Menyimpan…" : "Simpan catatan"}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -32,6 +32,8 @@ import {
   type DoctorView,
 } from "./format";
 import { ErrorNote, LoadingNote, type Load } from "./load-state";
+import { messageOf } from "@/lib/api-client";
+import { useLoad } from "@/lib/use-load";
 import { nameError, phoneError } from "./patient-validation";
 import { BookingSuccess } from "./booking-success";
 import { StepConfirm } from "./step-confirm";
@@ -70,56 +72,6 @@ const EMPTY: BookingState = {
 
 const cardShadow =
   "shadow-[0_1px_2px_rgb(27_36_33/0.06),0_12px_32px_rgb(27_36_33/0.08)]";
-
-function messageOf(error: unknown) {
-  return error instanceof ApiFailure
-    ? error.message
-    : "Terjadi kesalahan. Coba lagi.";
-}
-
-/** Muat data dari API setiap kali `key` berubah; `reload` untuk tombol Coba lagi. */
-function useLoad<T>(key: string | null, load: (key: string) => Promise<T>) {
-  const [attempt, setAttempt] = useState(0);
-  const [settled, setSettled] = useState<{
-    token: string;
-    result: Load<T>;
-  } | null>(null);
-  const loadRef = useRef(load);
-  useEffect(() => {
-    loadRef.current = load;
-  });
-
-  useEffect(() => {
-    if (!key) return;
-    let active = true;
-    const token = `${key}#${attempt}`;
-    loadRef.current(key).then(
-      (data) => {
-        if (active) setSettled({ token, result: { state: "ready", data } });
-      },
-      (error) => {
-        if (active)
-          setSettled({
-            token,
-            result: { state: "error", message: messageOf(error) },
-          });
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [key, attempt]);
-
-  const reload = useCallback(() => setAttempt((n) => n + 1), []);
-  const token = key ? `${key}#${attempt}` : null;
-  // Belum ada hasil untuk permintaan terbaru berarti masih memuat.
-  const result: Load<T> = !token
-    ? { state: "idle" }
-    : settled?.token === token
-      ? settled.result
-      : { state: "loading" };
-  return [result, reload] as const;
-}
 
 function dayOption(day: AvailabilityDay): DayOption {
   const free = day.slots.filter((s) => s.status === "available").length;

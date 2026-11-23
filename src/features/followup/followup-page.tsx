@@ -15,13 +15,14 @@ import {
 } from "@/features/booking/format";
 import { PatientHistory } from "./patient-history";
 import { DueHint, FollowUpBadge, daysBetween } from "./follow-up-status";
+import { useLoad } from "@/lib/use-load";
+import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
 import {
-  FOLLOW_UPS,
-  HISTORY,
-  TODAY,
+  followUpApi,
+  upcomingFollowUp,
   type FollowUp,
   type FollowUpStatus,
-} from "./mock-data";
+} from "./api";
 
 const card =
   "rounded-xl border bg-card shadow-[0_1px_2px_rgb(27_36_33/0.05),0_8px_24px_rgb(27_36_33/0.05)]";
@@ -43,20 +44,45 @@ const RANGES = [
 function DueLabel({
   dueDate,
   status,
+  today,
 }: {
   dueDate: string;
   status: FollowUpStatus;
+  today: string;
 }) {
   return (
     <span className="grid gap-0.5">
       <span>{formatLongDate(dueDate)}</span>
-      <DueHint dueDate={dueDate} status={status} today={TODAY} />
+      <DueHint dueDate={dueDate} status={status} today={today} />
     </span>
   );
 }
 
 export function FollowUpPage() {
-  const [followUps] = useState<FollowUp[]>(FOLLOW_UPS);
+  const [list, reload] = useLoad("list", () => followUpApi.list());
+  if (list.state === "ready")
+    return (
+      <FollowUpView today={list.data.today} followUps={list.data.followUps} />
+    );
+  return (
+    <div className="grid gap-4 px-4 pt-5 pb-10 md:p-8 lg:px-10">
+      <h1 className="text-2xl font-bold tracking-tight">Kontrol pasien</h1>
+      {list.state === "error" ? (
+        <ErrorNote message={list.message} onRetry={reload} />
+      ) : (
+        <LoadingNote>Memuat jadwal kontrol…</LoadingNote>
+      )}
+    </div>
+  );
+}
+
+function FollowUpView({
+  today,
+  followUps,
+}: {
+  today: string;
+  followUps: FollowUp[];
+}) {
   const [status, setStatus] =
     useState<(typeof STATUS_TILES)[number]["id"]>("semua");
   const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("semua");
@@ -66,7 +92,7 @@ export function FollowUpPage() {
 
   const q = query.trim().toLowerCase();
   const inScope = followUps.filter((f) => {
-    const diff = daysBetween(TODAY, f.dueDate);
+    const diff = daysBetween(today, f.dueDate);
     const rangeOk =
       range === "semua" ||
       (range === "terlambat" && diff < 0) ||
@@ -89,7 +115,7 @@ export function FollowUpPage() {
     done: inScope.filter((f) => f.status === "done").length,
   };
   const overdue = followUps.filter(
-    (f) => f.status === "pending" && daysBetween(TODAY, f.dueDate) < 0,
+    (f) => f.status === "pending" && daysBetween(today, f.dueDate) < 0,
   ).length;
   const filtered = status !== "semua" || range !== "semua" || q !== "";
 
@@ -246,9 +272,13 @@ export function FollowUpPage() {
                         <span className="font-semibold break-words">
                           {f.patient.name}
                         </span>
-                        <span className="text-xs text-muted-foreground tabular-nums">
+                        <a
+                          href={`tel:${f.patient.phone}`}
+                          className="justify-self-start rounded-sm text-xs text-muted-foreground tabular-nums underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                          aria-label={`Telepon ${f.patient.name}, ${f.patient.phone}`}
+                        >
                           {f.patient.phone}
-                        </span>
+                        </a>
                       </span>
                     </span>
                   </td>
@@ -262,7 +292,11 @@ export function FollowUpPage() {
                     </span>
                   </td>
                   <td className="md:border-b md:px-4 md:py-3">
-                    <DueLabel dueDate={f.dueDate} status={f.status} />
+                    <DueLabel
+                      dueDate={f.dueDate}
+                      status={f.status}
+                      today={today}
+                    />
                   </td>
                   <td className="md:border-b md:px-4 md:py-3">
                     <FollowUpBadge status={f.status} />
@@ -307,6 +341,7 @@ export function FollowUpPage() {
 
       <HistoryDialog
         followUp={historyFor}
+        today={today}
         onClose={() => setHistoryFor(null)}
       />
     </div>
@@ -315,22 +350,21 @@ export function FollowUpPage() {
 
 /** Kunjungan asal yang menetapkan tanggal kontrol ini. */
 function SourceVisitHint({ followUp }: { followUp: FollowUp }) {
-  const source = followUp.sourceVisitId
-    ? HISTORY[followUp.patient.id]?.find((v) => v.id === followUp.sourceVisitId)
-    : undefined;
-  if (!source) return null;
+  if (!followUp.sourceVisitDate) return null;
   return (
     <span className="text-xs text-muted-foreground">
-      Dari kunjungan {formatShortDate(source.date)}
+      Dari kunjungan {formatShortDate(followUp.sourceVisitDate)}
     </span>
   );
 }
 
 function HistoryDialog({
   followUp,
+  today,
   onClose,
 }: {
   followUp: FollowUp | null;
+  today: string;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -340,10 +374,9 @@ function HistoryDialog({
     if (followUp && !dialog.open) dialog.showModal();
     if (!followUp && dialog.open) dialog.close();
   }, [followUp]);
-  const visits = followUp ? (HISTORY[followUp.patient.id] ?? []) : [];
-  const patientFollowUps = followUp
-    ? FOLLOW_UPS.filter((f) => f.patient.id === followUp.patient.id)
-    : [];
+  const [history, reload] = useLoad(followUp?.patient.id ?? null, (id) =>
+    followUpApi.history(id),
+  );
 
   return (
     <dialog
@@ -380,22 +413,29 @@ function HistoryDialog({
             </button>
           </div>
           <div className="p-5">
-            <PatientHistory
-              showHeading={false}
-              visits={visits}
-              followUps={patientFollowUps}
-              today={TODAY}
-              highlightVisitId={followUp.sourceVisitId}
-              nextFollowUp={
-                followUp.status === "done"
-                  ? null
-                  : {
-                      date: followUp.dueDate,
-                      service: followUp.service.name,
-                      status: followUp.status,
-                    }
-              }
-            />
+            {history.state === "ready" ? (
+              <PatientHistory
+                showHeading={false}
+                visits={history.data.visits}
+                followUps={history.data.followUps}
+                today={today}
+                highlightVisitId={followUp.sourceVisitId}
+                nextFollowUp={(() => {
+                  const next = upcomingFollowUp(history.data.followUps);
+                  return next
+                    ? {
+                        date: next.dueDate,
+                        service: next.service.name,
+                        status: next.status,
+                      }
+                    : null;
+                })()}
+              />
+            ) : history.state === "error" ? (
+              <ErrorNote message={history.message} onRetry={reload} />
+            ) : (
+              <LoadingNote>Memuat riwayat pasien…</LoadingNote>
+            )}
           </div>
           <div className="flex justify-end border-t px-5 py-4">
             <button

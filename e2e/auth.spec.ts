@@ -36,12 +36,12 @@ test("signup, persisted session, signout, rejected password, and signin work", a
     .click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(
-    page.getByRole("button", { name: "Sign out", exact: true }),
+    page.getByRole("button", { name: "Keluar", exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(/\/app$/);
   await expect(
-    page.getByRole("button", { name: "Sign out", exact: true }),
+    page.getByRole("button", { name: "Keluar", exact: true }),
   ).toBeVisible();
   // The public booking page stays reachable for signed-in staff.
   await page.goto("/");
@@ -54,7 +54,7 @@ test("signup, persisted session, signout, rejected password, and signin work", a
   ).toBe(true);
   await page.goto("/sign-in");
   await expect(page).toHaveURL(/\/app$/);
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByRole("button", { name: "Keluar", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await page.goto("/app");
   await expect(page).toHaveURL(/\/sign-in$/);

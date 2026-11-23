@@ -13,13 +13,17 @@ export function SavedFollowUp({
   intervalDays,
   saving,
   onSave,
+  lockedReason,
 }: {
   date: string;
   today: string;
   serviceName: string;
   intervalDays: number | null;
   saving: boolean;
-  onSave: (date: string) => Promise<void> | void;
+  /** Kembalikan false bila gagal agar draf tetap terbuka. */
+  onSave: (date: string) => Promise<boolean | void> | boolean | void;
+  /** Alasan tanggal tidak bisa diubah lagi, mis. pasien sudah booking. */
+  lockedReason?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(date);
@@ -47,8 +51,7 @@ export function SavedFollowUp({
             variant="primary"
             disabled={saving || Boolean(error)}
             onClick={async () => {
-              await onSave(draft);
-              setEditing(false);
+              if ((await onSave(draft)) !== false) setEditing(false);
             }}
           >
             {saving ? "Menyimpan…" : "Simpan tanggal kontrol"}
@@ -86,16 +89,20 @@ export function SavedFollowUp({
             <span className="text-muted-foreground">Tidak dijadwalkan</span>
           )}
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(date);
-            setEditing(true);
-          }}
-          className="justify-self-start rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          {date ? "Ubah tanggal kontrol" : "Jadwalkan kontrol"}
-        </button>
+        {lockedReason ? (
+          <p className="text-sm text-muted-foreground">{lockedReason}</p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(date);
+              setEditing(true);
+            }}
+            className="justify-self-start rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            {date ? "Ubah tanggal kontrol" : "Jadwalkan kontrol"}
+          </button>
+        )}
       </div>
     </div>
   );

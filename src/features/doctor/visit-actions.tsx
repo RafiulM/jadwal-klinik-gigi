@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowRight, Check, LoaderCircle, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TodayAppointment } from "./mock-data";
+import type { TodayAppointment } from "./api";
 
 export function ActionButton({
   variant,
