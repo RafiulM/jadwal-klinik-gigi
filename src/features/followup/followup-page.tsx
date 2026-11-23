@@ -12,12 +12,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { StatusBadge } from "@/components/status-badge";
-import {
-  displayTime,
-  formatLongDate,
-  initialsOf,
-} from "@/features/booking/format";
+import { formatLongDate, initialsOf } from "@/features/booking/format";
+import { PatientHistory } from "./patient-history";
 import {
   FOLLOW_UPS,
   HISTORY,
@@ -427,60 +423,16 @@ function HistoryDialog({
               <X className="size-5" aria-hidden="true" />
             </button>
           </div>
-          <div className="grid gap-4 p-5">
-            {visits.length ? (
-              <ol className="grid gap-5">
-                {visits.map((v, i) => (
-                  <li
-                    key={v.id}
-                    className="relative grid grid-cols-[1rem_minmax(0,1fr)] gap-3"
-                  >
-                    {i < visits.length - 1 ? (
-                      <span
-                        aria-hidden="true"
-                        className="absolute top-6 -bottom-5 left-[7px] w-0.5 bg-border"
-                      />
-                    ) : null}
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "relative z-10 mt-1 size-4 rounded-full",
-                        v.status === "completed"
-                          ? "bg-success ring-3 ring-success-soft"
-                          : v.status === "no_show"
-                            ? "bg-card ring-2 ring-destructive ring-inset"
-                            : "bg-info ring-3 ring-info-soft",
-                      )}
-                    />
-                    <div className="grid gap-1">
-                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                        {formatLongDate(v.date)}, {displayTime(v.time)} ·{" "}
-                        {v.service}
-                        <StatusBadge status={v.status} />
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {v.doctor}
-                      </p>
-                      {v.notes ? (
-                        <p className="rounded-sm bg-muted px-3 py-2 text-sm">
-                          {v.notes}
-                        </p>
-                      ) : null}
-                      {v.followUpDate ? (
-                        <p className="text-sm text-muted-foreground">
-                          Kontrol berikutnya ditetapkan:{" "}
-                          {formatLongDate(v.followUpDate)}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Belum ada riwayat kunjungan untuk pasien ini.
-              </p>
-            )}
+          <div className="p-5">
+            <PatientHistory
+              showHeading={false}
+              visits={visits}
+              nextFollowUp={
+                followUp.status === "done"
+                  ? null
+                  : { date: followUp.dueDate, service: followUp.service.name }
+              }
+            />
           </div>
           <div className="flex justify-end border-t px-5 py-4">
             <button

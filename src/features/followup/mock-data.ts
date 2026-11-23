@@ -142,6 +142,18 @@ export const HISTORY: Record<string, HistoryVisit[]> = {
       followUpDate: "2026-11-20",
     },
   ],
+  p5: [
+    {
+      id: "h9",
+      date: "2025-08-04",
+      time: "17:30",
+      service: "Tambal gigi",
+      doctor: "drg. Maya Lestari",
+      status: "no_show",
+      notes: "",
+      followUpDate: null,
+    },
+  ],
   p7: [
     {
       id: "h6",

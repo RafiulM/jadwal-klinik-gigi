@@ -19,6 +19,12 @@ import {
 } from "@/features/followup/follow-up-field";
 import { SavedFollowUp } from "@/features/followup/saved-follow-up";
 import { FollowUpSuggestion } from "@/features/followup/follow-up-suggestion";
+import { PatientHistory } from "@/features/followup/patient-history";
+import {
+  FOLLOW_UPS,
+  HISTORY,
+  type HistoryVisit,
+} from "@/features/followup/mock-data";
 import { formatLongDate } from "@/features/booking/format";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
@@ -211,6 +217,39 @@ export function DoctorTodayPage() {
     setSelectedId(id);
     setMessage("");
   }
+
+  // Riwayat: kunjungan sebelumnya + hasil kunjungan hari ini bila sudah ditandai.
+  const history: HistoryVisit[] = selected
+    ? [
+        ...(selected.status !== "scheduled"
+          ? [
+              {
+                id: `today-${selected.id}`,
+                date: TODAY.date,
+                time: selected.time,
+                service: selected.service.name,
+                doctor: TODAY.doctor.name,
+                status: selected.status,
+                notes: selected.notes,
+                followUpDate: selected.followUpDate || null,
+              },
+            ]
+          : []),
+        ...(HISTORY[selected.patient.id] ?? []).filter(
+          (v) => v.date !== TODAY.date,
+        ),
+      ]
+    : [];
+  const pendingFollowUp = selected
+    ? FOLLOW_UPS.find(
+        (f) => f.patient.id === selected.patient.id && f.status !== "done",
+      )
+    : undefined;
+  const nextFollowUp = selected?.followUpDate
+    ? { date: selected.followUpDate, service: selected.service.name }
+    : pendingFollowUp
+      ? { date: pendingFollowUp.dueDate, service: pendingFollowUp.service.name }
+      : null;
 
   function resetFilters() {
     setFilter("semua");
@@ -596,6 +635,10 @@ export function DoctorTodayPage() {
                   ) : null}
                 </MarkedVisit>
               )}
+
+              <div className="border-t pt-5">
+                <PatientHistory visits={history} nextFollowUp={nextFollowUp} />
+              </div>
             </section>
           ) : null}
         </div>
