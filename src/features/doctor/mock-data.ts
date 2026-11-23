@@ -7,6 +7,7 @@ export type AppointmentStatus = "scheduled" | "completed" | "no_show";
 export type TodayAppointment = {
   id: string;
   time: string;
+  endTime: string;
   status: AppointmentStatus;
   notes: string;
   service: { id: string; name: string; followUpDays: number | null };
@@ -22,6 +23,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a1",
     time: "09:00",
+    endTime: "09:30",
     status: "completed",
     notes:
       "Karang gigi rahang bawah cukup tebal. Gusi sedikit berdarah saat dibersihkan.",
@@ -36,6 +38,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a2",
     time: "10:00",
+    endTime: "10:30",
     status: "no_show",
     notes: "",
     service: { id: "tambal", name: "Tambal gigi", followUpDays: null },
@@ -49,6 +52,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a3",
     time: "10:30",
+    endTime: "11:00",
     status: "scheduled",
     notes: "",
     service: {
@@ -66,6 +70,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a4",
     time: "11:00",
+    endTime: "11:30",
     status: "scheduled",
     notes: "",
     service: { id: "scaling", name: "Scaling", followUpDays: 180 },
@@ -79,6 +84,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a5",
     time: "12:00",
+    endTime: "12:30",
     status: "scheduled",
     notes: "",
     service: { id: "tambal", name: "Tambal gigi", followUpDays: null },
@@ -92,6 +98,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
   {
     id: "a6",
     time: "13:00",
+    endTime: "13:30",
     status: "scheduled",
     notes: "",
     service: { id: "scaling", name: "Scaling", followUpDays: 180 },

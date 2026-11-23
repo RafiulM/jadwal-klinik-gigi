@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Calendar, RotateCcw, Search, SearchX } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  CalendarOff,
+  CircleCheck,
+  RotateCcw,
+  Search,
+  SearchX,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge, type AppointmentStatus } from "@/components/status-badge";
 import { TODAY, TODAY_APPOINTMENTS, type TodayAppointment } from "./mock-data";
@@ -201,282 +209,319 @@ export function DoctorTodayPage() {
                 {displayTime(nextUp.time)} · {nextUp.patient.name}
               </p>
             </div>
+          ) : counts.semua > 0 ? (
+            <p className="flex items-center gap-2 rounded-md bg-brand-deep-hover px-4 py-3 font-semibold">
+              <CircleCheck className="size-5" aria-hidden="true" />
+              Semua pasien hari ini sudah ditangani
+            </p>
           ) : null}
         </div>
-        <div className="grid gap-2">
-          <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm">
-            <span className="font-semibold">
-              {handled} dari {counts.semua} pasien sudah ditangani
-            </span>
-            <span className="text-on-brand-deep-muted">
-              {counts.completed} selesai · {counts.no_show} tidak datang ·{" "}
-              {counts.scheduled} menunggu
-            </span>
-          </div>
-          <div
-            role="progressbar"
-            aria-label="Progres pasien hari ini"
-            aria-valuemin={0}
-            aria-valuemax={counts.semua}
-            aria-valuenow={handled}
-            className="h-2 overflow-hidden rounded-full bg-brand-deep-active"
-          >
-            <span
-              className="block h-full rounded-full bg-on-brand-deep"
-              style={{
-                width: `${counts.semua ? (handled / counts.semua) * 100 : 0}%`,
-              }}
-            />
-          </div>
-        </div>
-      </header>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] xl:items-start">
-        <section
-          aria-labelledby="daftar-pasien"
-          className={cn(
-            card,
-            "gap-4 p-4 md:p-6",
-            view === "detail" ? "hidden xl:grid" : "grid",
-          )}
-        >
-          <div className="grid gap-3">
-            <h2 id="daftar-pasien" className="text-lg font-bold">
-              Daftar pasien
-            </h2>
-            <div className="relative">
-              <label htmlFor="cari-pasien" className="sr-only">
-                Cari pasien atau layanan
-              </label>
-              <Search
-                className="pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <input
-                ref={searchRef}
-                id="cari-pasien"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cari nama pasien atau layanan"
-                className="min-h-12 w-full rounded-md border border-border-strong bg-card pr-3 pl-10 text-base outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary"
-              />
+        {counts.semua > 0 ? (
+          <div className="grid gap-2">
+            <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm">
+              <span className="font-semibold">
+                {handled} dari {counts.semua} pasien sudah ditangani
+              </span>
+              <span className="text-on-brand-deep-muted">
+                {counts.completed} selesai · {counts.no_show} tidak datang ·{" "}
+                {counts.scheduled} menunggu
+              </span>
             </div>
             <div
-              role="group"
-              aria-label="Saring status"
-              className="flex flex-wrap gap-2"
+              role="progressbar"
+              aria-label="Progres pasien hari ini"
+              aria-valuemin={0}
+              aria-valuemax={counts.semua}
+              aria-valuenow={handled}
+              className="h-2 overflow-hidden rounded-full bg-brand-deep-active"
             >
-              {FILTERS.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  aria-pressed={filter === f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
-                    filter === f.id
-                      ? "border-brand-deep bg-brand-deep font-semibold text-on-brand-deep"
-                      : "bg-card font-medium hover:border-primary",
-                  )}
-                >
-                  {f.label}
-                  <span
-                    className={cn(
-                      "min-w-5 rounded-full px-1 text-center text-xs font-bold",
-                      filter === f.id
-                        ? "bg-brand-deep-active text-on-brand-deep"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {counts[f.id]}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="flex min-h-6 items-center justify-between gap-3">
-              <p aria-live="polite" className="text-sm text-muted-foreground">
-                Menampilkan {visible.length} dari {counts.semua} pasien
-              </p>
-              {filtered ? (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  Reset filter
-                </button>
-              ) : null}
+              <span
+                className="block h-full rounded-full bg-on-brand-deep"
+                style={{
+                  width: `${counts.semua ? (handled / counts.semua) * 100 : 0}%`,
+                }}
+              />
             </div>
           </div>
+        ) : null}
+      </header>
 
-          {visible.length ? (
-            <ol className="grid gap-2">
-              {visible.map((a) => {
-                const current = a.id === selected?.id;
-                return (
-                  <li key={a.id}>
-                    <button
-                      type="button"
-                      ref={(node) => {
-                        rowRefs.current[a.id] = node;
-                      }}
-                      aria-current={current || undefined}
-                      onClick={() => {
-                        setSelectedId(a.id);
-                        setMessage("");
-                        setView("detail");
-                      }}
-                      className={cn(
-                        "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-card p-3 text-left transition-[border-color,box-shadow] hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
-                        current &&
-                          "border-primary bg-primary-50 shadow-[inset_3px_0_0_var(--color-primary)]",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "rounded-sm px-2 py-1 text-sm font-bold tabular-nums",
-                          current
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted",
-                        )}
-                      >
-                        {displayTime(a.time)}
-                      </span>
-                      <PatientAvatar
-                        name={a.patient.name}
-                        muted={a.status === "no_show"}
-                      />
-                      <span className="grid min-w-0 gap-1">
-                        <span className="leading-snug font-semibold break-words">
-                          {a.patient.name}
-                        </span>
-                        <span className="text-sm leading-snug text-muted-foreground">
-                          {a.service.name}
-                          {nextUp?.id === a.id ? (
-                            <strong className="font-semibold text-primary">
-                              {" "}
-                              · Berikutnya
-                            </strong>
-                          ) : null}
-                        </span>
-                      </span>
-                      <StatusBadge status={a.status} />
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <div className="grid justify-items-center gap-3 rounded-md bg-primary-50 px-4 py-8 text-center">
-              <SearchX className="size-7 text-primary" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">
-                Tidak ada pasien yang cocok dengan filter ini.
-              </p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                <RotateCcw className="size-3.5" aria-hidden="true" />
-                Reset filter
-              </button>
-            </div>
+      {counts.semua === 0 ? (
+        <section
+          className={cn(
+            card,
+            "grid justify-items-center gap-3 px-6 py-12 text-center",
           )}
+          aria-labelledby="kosong-title"
+        >
+          <CalendarOff className="size-9 text-primary" aria-hidden="true" />
+          <h2 id="kosong-title" className="text-lg font-bold">
+            Tidak ada pasien terjadwal hari ini
+          </h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Janji temu baru dari halaman booking akan muncul di sini secara
+            otomatis.
+          </p>
         </section>
-
-        {selected ? (
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] xl:items-start">
           <section
-            aria-labelledby="detail-pasien"
+            aria-labelledby="daftar-pasien"
             className={cn(
               card,
-              "content-start gap-6 p-4 md:p-6",
-              view === "list" ? "hidden xl:grid" : "grid",
+              "gap-4 p-4 md:p-6",
+              view === "detail" ? "hidden xl:grid" : "grid",
             )}
           >
-            <button
-              ref={backRef}
-              type="button"
-              onClick={() => setView("list")}
-              className="inline-flex min-h-10 items-center gap-2 justify-self-start rounded-sm text-sm font-semibold text-primary focus-visible:outline-2 focus-visible:outline-primary xl:hidden"
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              Daftar pasien
-            </button>
-
-            <div className="flex items-center gap-4 border-b pb-5">
-              <PatientAvatar
-                name={selected.patient.name}
-                size="lg"
-                muted={selected.status === "no_show"}
-              />
-              <div className="grid min-w-0 gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2
-                    ref={headingRef}
-                    tabIndex={-1}
-                    id="detail-pasien"
-                    className="text-xl leading-tight font-bold tracking-tight break-words outline-none"
+            <div className="grid gap-3">
+              <h2 id="daftar-pasien" className="text-lg font-bold">
+                Daftar pasien
+              </h2>
+              <div className="relative">
+                <label htmlFor="cari-pasien" className="sr-only">
+                  Cari pasien atau layanan
+                </label>
+                <Search
+                  className="pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <input
+                  ref={searchRef}
+                  id="cari-pasien"
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Cari nama pasien atau layanan"
+                  className="min-h-12 w-full rounded-md border border-border-strong bg-card pr-3 pl-10 text-base outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary"
+                />
+              </div>
+              <div
+                role="group"
+                aria-label="Saring status"
+                className="flex flex-wrap gap-2"
+              >
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={filter === f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={cn(
+                      "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+                      filter === f.id
+                        ? "border-brand-deep bg-brand-deep font-semibold text-on-brand-deep"
+                        : "bg-card font-medium hover:border-primary",
+                    )}
                   >
-                    {selected.patient.name}
-                  </h2>
-                  <StatusBadge status={selected.status} />
-                </div>
-                <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                  <span>Pukul {displayTime(selected.time)}</span>
-                  <span>{selected.service.name}</span>
-                  <span>
-                    {selected.patient.firstVisit
-                      ? "Kunjungan pertama"
-                      : "Pasien lama"}
-                  </span>
-                  <span>HP {selected.patient.phone}</span>
+                    {f.label}
+                    <span
+                      className={cn(
+                        "min-w-5 rounded-full px-1 text-center text-xs font-bold",
+                        filter === f.id
+                          ? "bg-brand-deep-active text-on-brand-deep"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {counts[f.id]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex min-h-6 items-center justify-between gap-3">
+                <p aria-live="polite" className="text-sm text-muted-foreground">
+                  Menampilkan {visible.length} dari {counts.semua} pasien
                 </p>
+                {filtered ? (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    Reset filter
+                  </button>
+                ) : null}
               </div>
             </div>
 
-            <p
-              role="status"
-              aria-live="polite"
-              className="rounded-md bg-success-soft px-4 py-3 text-sm font-medium text-success empty:hidden"
-            >
-              {message}
-            </p>
-
-            {selected.status === "scheduled" ? (
-              <PendingVisitActions
-                busy={busy === "done" || busy === "no_show" ? busy : null}
-                onDone={() => changeStatus("completed", "done")}
-                onNoShow={() => changeStatus("no_show", "no_show")}
-              >
-                <NoteField
-                  value={noteDrafts[selected.id] ?? selected.notes}
-                  onChange={(value) =>
-                    setNoteDrafts((prev) => ({ ...prev, [selected.id]: value }))
-                  }
-                />
-              </PendingVisitActions>
+            {visible.length ? (
+              <ol className="grid gap-2">
+                {visible.map((a) => {
+                  const current = a.id === selected?.id;
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        ref={(node) => {
+                          rowRefs.current[a.id] = node;
+                        }}
+                        aria-current={current || undefined}
+                        onClick={() => {
+                          setSelectedId(a.id);
+                          setMessage("");
+                          setView("detail");
+                        }}
+                        className={cn(
+                          "grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-md border bg-card p-3 text-left sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] transition-[border-color,box-shadow] hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+                          current &&
+                            "border-primary bg-primary-50 shadow-[inset_3px_0_0_var(--color-primary)]",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "rounded-sm px-2 py-1 text-sm font-bold tabular-nums",
+                            current
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted",
+                          )}
+                        >
+                          {displayTime(a.time)}
+                        </span>
+                        <span className="hidden sm:contents">
+                          <PatientAvatar
+                            name={a.patient.name}
+                            muted={a.status === "no_show"}
+                          />
+                        </span>
+                        <span className="grid min-w-0 gap-1">
+                          <span className="leading-snug font-semibold break-words">
+                            {a.patient.name}
+                          </span>
+                          <span className="text-sm leading-snug text-muted-foreground">
+                            {a.service.name}
+                            {nextUp?.id === a.id ? (
+                              <strong className="font-semibold text-primary">
+                                {" "}
+                                · Berikutnya
+                              </strong>
+                            ) : null}
+                          </span>
+                        </span>
+                        <StatusBadge
+                          status={a.status}
+                          className="col-start-2 justify-self-start sm:col-start-auto sm:justify-self-auto"
+                        />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
             ) : (
-              <MarkedVisit
-                appointment={selected}
-                nextPatient={nextPatient}
-                onNext={() => nextPatient && goToPatient(nextPatient.id)}
-                onUndo={() => changeStatus("scheduled", "undo")}
-                busy={busy !== null}
-              >
-                {selected.status === "completed" ? (
-                  <SavedNote
-                    key={selected.id}
-                    note={selected.notes}
-                    saving={savingNote}
-                    onSave={saveNote}
-                  />
-                ) : null}
-              </MarkedVisit>
+              <div className="grid justify-items-center gap-3 rounded-md bg-primary-50 px-4 py-8 text-center">
+                <SearchX className="size-7 text-primary" aria-hidden="true" />
+                <p className="text-sm text-muted-foreground">
+                  Tidak ada pasien yang cocok dengan filter ini.
+                </p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="inline-flex items-center gap-1.5 rounded-sm p-1 text-sm font-semibold text-primary underline underline-offset-3 focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <RotateCcw className="size-3.5" aria-hidden="true" />
+                  Reset filter
+                </button>
+              </div>
             )}
           </section>
-        ) : null}
-      </div>
+
+          {selected ? (
+            <section
+              aria-labelledby="detail-pasien"
+              className={cn(
+                card,
+                "content-start gap-6 p-4 md:p-6",
+                view === "list" ? "hidden xl:grid" : "grid",
+              )}
+            >
+              <button
+                ref={backRef}
+                type="button"
+                onClick={() => setView("list")}
+                className="inline-flex min-h-10 items-center gap-2 justify-self-start rounded-sm text-sm font-semibold text-primary focus-visible:outline-2 focus-visible:outline-primary xl:hidden"
+              >
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                Daftar pasien
+              </button>
+
+              <div className="flex items-center gap-4 border-b pb-5">
+                <PatientAvatar
+                  name={selected.patient.name}
+                  size="lg"
+                  muted={selected.status === "no_show"}
+                />
+                <div className="grid min-w-0 gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2
+                      ref={headingRef}
+                      tabIndex={-1}
+                      id="detail-pasien"
+                      className="text-xl leading-tight font-bold tracking-tight break-words outline-none"
+                    >
+                      {selected.patient.name}
+                    </h2>
+                    <StatusBadge status={selected.status} />
+                  </div>
+                  <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                    <span>
+                      Pukul {displayTime(selected.time)}–
+                      {displayTime(selected.endTime)}
+                    </span>
+                    <span>{selected.service.name}</span>
+                    <span>
+                      {selected.patient.firstVisit
+                        ? "Kunjungan pertama"
+                        : "Pasien lama"}
+                    </span>
+                    <span>HP {selected.patient.phone}</span>
+                  </p>
+                </div>
+              </div>
+
+              <p
+                role="status"
+                aria-live="polite"
+                className="rounded-md bg-success-soft px-4 py-3 text-sm font-medium text-success empty:hidden"
+              >
+                {message}
+              </p>
+
+              {selected.status === "scheduled" ? (
+                <PendingVisitActions
+                  busy={busy === "done" || busy === "no_show" ? busy : null}
+                  onDone={() => changeStatus("completed", "done")}
+                  onNoShow={() => changeStatus("no_show", "no_show")}
+                >
+                  <NoteField
+                    value={noteDrafts[selected.id] ?? selected.notes}
+                    onChange={(value) =>
+                      setNoteDrafts((prev) => ({
+                        ...prev,
+                        [selected.id]: value,
+                      }))
+                    }
+                  />
+                </PendingVisitActions>
+              ) : (
+                <MarkedVisit
+                  appointment={selected}
+                  nextPatient={nextPatient}
+                  onNext={() => nextPatient && goToPatient(nextPatient.id)}
+                  onUndo={() => changeStatus("scheduled", "undo")}
+                  busy={busy !== null}
+                >
+                  {selected.status === "completed" ? (
+                    <SavedNote
+                      key={selected.id}
+                      note={selected.notes}
+                      saving={savingNote}
+                      onSave={saveNote}
+                    />
+                  ) : null}
+                </MarkedVisit>
+              )}
+            </section>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
