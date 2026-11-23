@@ -13,6 +13,8 @@ export type DoctorsQuery = z.infer<typeof doctorsQuerySchema>;
 export const availabilityQuerySchema = z
   .object({
     doctorId: uuid,
+    // Opsional: pastikan dokter menangani layanan aktif ini.
+    serviceId: uuid.optional(),
     from: isoDate.optional(),
     days: z.coerce.number().int().min(1).max(14).default(7),
   })

@@ -3,8 +3,10 @@ import { ApiError, withPublicApi } from "@/lib/api.server";
 import { getAvailability } from "@/services/booking.service.server";
 import { availabilityQuerySchema } from "@/validators/booking";
 
-// GET /api/booking/availability?doctorId=<uuid>&from=YYYY-MM-DD&days=7
-// Tanggal dan slot jam untuk satu dokter: available, taken, atau past.
+// GET /api/booking/availability?doctorId=<uuid>&serviceId=<uuid>&from=YYYY-MM-DD&days=7
+// Endpoint publik (tanpa akun). Tanggal dan slot jam untuk satu dokter aktif:
+// available, taken (bentrok dengan janji lain), atau past. Mengikuti jam
+// praktik & jarak slot yang diatur admin di Kelola klinik.
 export const Route = createFileRoute("/api/booking/availability")({
   server: {
     handlers: {

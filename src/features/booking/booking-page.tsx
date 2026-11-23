@@ -105,8 +105,13 @@ export function BookingPage() {
     bookingApi.doctors(serviceId).then((list) => list.map(toDoctorView)),
   );
   const [availability, reloadAvailability] = useLoad(
-    booking.doctorId,
-    (doctorId) => bookingApi.availability(doctorId).then((a) => a.days),
+    booking.doctorId && booking.serviceId
+      ? `${booking.doctorId}|${booking.serviceId}`
+      : null,
+    (key) => {
+      const [doctorId, serviceId] = key.split("|");
+      return bookingApi.availability(doctorId, serviceId).then((a) => a.days);
+    },
   );
 
   const headingRef = useRef<HTMLHeadingElement>(null);

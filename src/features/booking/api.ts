@@ -57,9 +57,9 @@ export const bookingApi = {
     request<ApiDoctor[]>(
       `/api/booking/doctors?serviceId=${encodeURIComponent(serviceId)}`,
     ),
-  availability: (doctorId: string) =>
+  availability: (doctorId: string, serviceId: string) =>
     request<{ doctorId: string; from: string; days: AvailabilityDay[] }>(
-      `/api/booking/availability?doctorId=${encodeURIComponent(doctorId)}&days=7`,
+      `/api/booking/availability?doctorId=${encodeURIComponent(doctorId)}&serviceId=${encodeURIComponent(serviceId)}&days=7`,
     ),
   create: (input: {
     serviceId: string;

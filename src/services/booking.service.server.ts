@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, between, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import { maskPhone } from "@/lib/phone";
 import { uniqueViolation } from "@/lib/db-errors.server";
@@ -141,13 +141,28 @@ export type SlotStatus = "available" | "taken" | "past";
 // (apa pun statusnya) tetap terisi; jam hari ini yang sudah lewat tidak bisa dipilih.
 // Mengembalikan null bila dokter tidak ada atau sedang tidak menerima booking.
 export async function getAvailability(
-  { doctorId, from, days }: AvailabilityQuery,
+  { doctorId, serviceId, from, days }: AvailabilityQuery,
   now = new Date(),
 ) {
+  // Dokter harus aktif dan, bila layanan diberikan, menangani layanan aktif itu.
   const [doctor] = await db
     .select({ id: doctors.id })
     .from(doctors)
-    .where(and(eq(doctors.id, doctorId), eq(doctors.isActive, true)))
+    .where(
+      and(
+        eq(doctors.id, doctorId),
+        eq(doctors.isActive, true),
+        serviceId
+          ? sql`exists (
+              select 1 from ${doctorServices}
+              join ${services} on ${services.id} = ${doctorServices.serviceId}
+              where ${doctorServices.doctorId} = ${doctors.id}
+                and ${doctorServices.serviceId} = ${serviceId}
+                and ${services.isActive}
+            )`
+          : undefined,
+      ),
+    )
     .limit(1);
   if (!doctor) return null;
 
@@ -175,6 +190,7 @@ export async function getAvailability(
       .select({
         date: appointments.appointmentDate,
         startTime: appointments.startTime,
+        endTime: appointments.endTime,
       })
       .from(appointments)
       .where(
@@ -185,9 +201,16 @@ export async function getAvailability(
       ),
   ]);
 
-  const taken = new Set(
-    booked.map((row) => `${row.date}|${row.startTime.slice(0, 5)}`),
-  );
+  // Slot terisi bila bertabrakan dengan janji yang ada, termasuk janji lama
+  // yang dibuat sebelum jarak slot dokter diubah.
+  const bookedByDate = new Map<string, [number, number][]>();
+  for (const row of booked)
+    bookedByDate.set(row.date, [
+      ...(bookedByDate.get(row.date) ?? []),
+      [toMinutes(row.startTime), toMinutes(row.endTime)],
+    ]);
+  const overlaps = (date: string, startAt: number, endAt: number) =>
+    (bookedByDate.get(date) ?? []).some(([s, e]) => s < endAt && e > startAt);
 
   return {
     doctorId,
@@ -199,13 +222,18 @@ export async function getAvailability(
         .filter((s) => s.dayOfWeek === dow)
         .flatMap((s) => {
           const out: { time: string; status: SlotStatus }[] = [];
+          // Slot terakhir harus selesai paling lambat saat jam praktik berakhir.
           for (
             let m = toMinutes(s.startTime);
-            m < toMinutes(s.endTime);
+            m + s.slotIntervalMinutes <= toMinutes(s.endTime);
             m += s.slotIntervalMinutes
           ) {
             const time = fromMinutes(m);
-            const status: SlotStatus = taken.has(`${date}|${time}`)
+            const status: SlotStatus = overlaps(
+              date,
+              m,
+              m + s.slotIntervalMinutes,
+            )
               ? "taken"
               : date === today.date && m <= today.minutes
                 ? "past"
@@ -283,6 +311,9 @@ export async function createBooking(
               eq(doctorServices.serviceId, service.id),
             ),
           )
+          // Booking untuk dokter yang sama diproses bergantian agar cek
+          // bentrok di bawah tidak kecolongan oleh transaksi paralel.
+          .for("update", { of: doctors })
           .limit(1);
         if (!doctor) throw new BookingError("doctor_unavailable");
 
@@ -304,14 +335,27 @@ export async function createBooking(
           const from = toMinutes(s.startTime);
           return (
             startMinutes >= from &&
-            startMinutes < toMinutes(s.endTime) &&
+            startMinutes + s.slotIntervalMinutes <= toMinutes(s.endTime) &&
             (startMinutes - from) % s.slotIntervalMinutes === 0
           );
         });
         if (!schedule) throw new BookingError("slot_invalid");
-        const endTime = fromMinutes(
-          startMinutes + schedule.slotIntervalMinutes,
-        );
+        const endMinutes = startMinutes + schedule.slotIntervalMinutes;
+        const endTime = fromMinutes(endMinutes);
+
+        const [clash] = await tx
+          .select({ id: appointments.id })
+          .from(appointments)
+          .where(
+            and(
+              eq(appointments.doctorId, doctor.id),
+              eq(appointments.appointmentDate, input.date),
+              lt(appointments.startTime, endTime),
+              gt(appointments.endTime, input.time),
+            ),
+          )
+          .limit(1);
+        if (clash) throw new BookingError("slot_taken");
 
         const [patient] = await tx
           .insert(patients)
