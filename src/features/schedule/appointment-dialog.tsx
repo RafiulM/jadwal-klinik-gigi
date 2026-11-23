@@ -1,7 +1,12 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   CalendarClock,
+  CalendarPlus,
+  ExternalLink,
+  MessageCircle,
   NotebookPen,
+  ReceiptText,
   Smartphone,
   Stethoscope,
   UserRound,
@@ -39,6 +44,20 @@ function Fact({
   );
 }
 
+const BOOKED_AT = new Intl.DateTimeFormat("id-ID", {
+  timeZone: "Asia/Jakarta",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** "081234567890" → "6281234567890" untuk tautan WhatsApp. */
+function waNumber(phone: string) {
+  return phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
+}
+
 /** Detail satu janji temu di papan jadwal. */
 export function AppointmentDialog({
   appointment,
@@ -69,7 +88,7 @@ export function AppointmentDialog({
           <div className="flex items-start justify-between gap-3 rounded-t-xl bg-brand-deep p-5 text-on-brand-deep">
             <div className="grid min-w-0 gap-2">
               <p className="text-xs font-semibold tracking-wide text-on-brand-deep-muted uppercase">
-                Detail janji temu · {appointment.code}
+                Detail janji temu
               </p>
               <h2
                 id="janji-title"
@@ -102,18 +121,63 @@ export function AppointmentDialog({
               {appointment.doctor.name}
             </Fact>
             <Fact label="Nomor HP pasien" icon={Smartphone}>
-              <a
-                href={`tel:${appointment.patient.phone}`}
-                className="rounded-sm tabular-nums underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                {appointment.patient.phone}
-              </a>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <a
+                  href={`tel:${appointment.patient.phone}`}
+                  className="rounded-sm tabular-nums underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  {appointment.patient.phone}
+                </a>
+                <a
+                  href={`https://wa.me/${waNumber(appointment.patient.phone)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <MessageCircle className="size-3.5" aria-hidden="true" />
+                  Chat WhatsApp
+                  <span className="sr-only">(tab baru)</span>
+                </a>
+              </span>
             </Fact>
-            {appointment.notes ? (
-              <Fact label="Catatan dokter" icon={NotebookPen}>
-                {appointment.notes}
+            <Fact label="Catatan dokter" icon={NotebookPen}>
+              {appointment.notes || (
+                <span className="text-muted-foreground">
+                  {appointment.status === "scheduled"
+                    ? "Diisi dokter setelah pemeriksaan."
+                    : "Tidak ada catatan."}
+                </span>
+              )}
+            </Fact>
+            {appointment.status === "completed" ? (
+              <Fact label="Kontrol berikutnya" icon={CalendarPlus}>
+                {appointment.followUpDate ? (
+                  formatLongDate(appointment.followUpDate)
+                ) : (
+                  <span className="text-muted-foreground">
+                    Tidak dijadwalkan
+                  </span>
+                )}
               </Fact>
             ) : null}
+            <Fact label="Booking" icon={ReceiptText}>
+              <span className="grid gap-1">
+                <span>
+                  Kode {appointment.code} · dibuat{" "}
+                  {BOOKED_AT.format(new Date(appointment.createdAt))}
+                </span>
+                <Link
+                  to="/janji/$code"
+                  params={{ code: appointment.code }}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 justify-self-start rounded-sm text-sm font-semibold text-primary underline underline-offset-3 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  Lihat bukti booking
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                  <span className="sr-only">(tab baru)</span>
+                </Link>
+              </span>
+            </Fact>
           </dl>
           {children}
           <div className="flex justify-end border-t px-5 py-4">

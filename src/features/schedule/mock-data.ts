@@ -18,6 +18,10 @@ export type ScheduleAppointment = {
   endTime: string;
   status: AppointmentStatus;
   notes: string;
+  /** Tanggal kontrol berikutnya yang ditetapkan dari kunjungan ini; "" bila tidak ada. */
+  followUpDate: string;
+  /** Waktu pasien membuat booking (ISO). */
+  createdAt: string;
   service: { id: string; name: string };
   doctor: { id: string; name: string };
   patient: { id: string; name: string; phone: string };
@@ -156,6 +160,19 @@ function build(): ScheduleAppointment[] {
           endTime: plus30(time),
           status: special?.status ?? "scheduled",
           notes: special?.notes ?? "",
+          followUpDate:
+            special?.status === "completed" && serviceId === "scaling"
+              ? "2027-05-22"
+              : "",
+          createdAt: new Date(
+            Date.UTC(
+              2026,
+              10,
+              16 + (list.length % 6),
+              2 + (list.length % 9),
+              15,
+            ),
+          ).toISOString(),
           service: SERVICES.find((s) => s.id === serviceId)!,
           doctor: { id: doctor.id, name: doctor.name },
           patient: {
