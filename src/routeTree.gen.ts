@@ -21,6 +21,7 @@ import { Route as ProtectedDokterRouteImport } from './routes/_protected/dokter'
 import { Route as ProtectedJadwalRouteImport } from './routes/_protected/jadwal'
 import { Route as ProtectedKelolaRouteImport } from './routes/_protected/kelola'
 import { Route as ProtectedKontrolRouteImport } from './routes/_protected/kontrol'
+import { Route as ProtectedTanpaAksesRouteImport } from './routes/_protected/tanpa-akses'
 import { Route as JanjiCodeRouteImport } from './routes/janji/$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiBookingIndexRouteImport } from './routes/api/booking/index'
@@ -101,6 +102,11 @@ const ProtectedKelolaRoute = ProtectedKelolaRouteImport.update({
 const ProtectedKontrolRoute = ProtectedKontrolRouteImport.update({
   id: '/kontrol',
   path: '/kontrol',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTanpaAksesRoute = ProtectedTanpaAksesRouteImport.update({
+  id: '/tanpa-akses',
+  path: '/tanpa-akses',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const JanjiCodeRoute = JanjiCodeRouteImport.update({
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
+  '/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
+  '/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/_protected/jadwal': typeof ProtectedJadwalRoute
   '/_protected/kelola': typeof ProtectedKelolaRoute
   '/_protected/kontrol': typeof ProtectedKontrolRoute
+  '/_protected/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/booking/$code': typeof ApiBookingCodeRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/jadwal'
     | '/kelola'
     | '/kontrol'
+    | '/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/jadwal'
     | '/kelola'
     | '/kontrol'
+    | '/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/_protected/jadwal'
     | '/_protected/kelola'
     | '/_protected/kontrol'
+    | '/_protected/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
     | '/api/booking/$code'
@@ -552,6 +564,13 @@ declare module '@tanstack/react-router' {
       path: '/kontrol'
       fullPath: '/kontrol'
       preLoaderRoute: typeof ProtectedKontrolRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/tanpa-akses': {
+      id: '/_protected/tanpa-akses'
+      path: '/tanpa-akses'
+      fullPath: '/tanpa-akses'
+      preLoaderRoute: typeof ProtectedTanpaAksesRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/janji/$code': {
@@ -737,6 +756,7 @@ interface ProtectedRouteChildren {
   ProtectedJadwalRoute: typeof ProtectedJadwalRoute
   ProtectedKelolaRoute: typeof ProtectedKelolaRoute
   ProtectedKontrolRoute: typeof ProtectedKontrolRoute
+  ProtectedTanpaAksesRoute: typeof ProtectedTanpaAksesRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
@@ -746,6 +766,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedJadwalRoute: ProtectedJadwalRoute,
   ProtectedKelolaRoute: ProtectedKelolaRoute,
   ProtectedKontrolRoute: ProtectedKontrolRoute,
+  ProtectedTanpaAksesRoute: ProtectedTanpaAksesRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
