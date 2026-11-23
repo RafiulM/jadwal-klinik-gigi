@@ -14,8 +14,10 @@ export type DoctorDayRecap = {
 export type DayRecap = {
   date: string;
   dayOfWeek: number;
-  /** Dokter yang punya janji pada hari itu; kosong = klinik tutup/sepi. */
+  /** Dokter yang punya janji pada hari itu. */
   doctors: DoctorDayRecap[];
+  /** Jumlah dokter aktif yang punya jam praktik di hari itu (0 = klinik tutup). */
+  practicingDoctors: number;
   total: number;
   completed: number;
   noShow: number;

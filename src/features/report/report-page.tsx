@@ -2,9 +2,14 @@ import { useState, type ReactNode } from "react";
 import { getRouteApi } from "@tanstack/react-router";
 import {
   CalendarDays,
+  CalendarOff,
   Check,
   Clock,
+  Inbox,
   Info,
+  Minus,
+  TrendingDown,
+  TrendingUp,
   UserX,
   type LucideIcon,
 } from "lucide-react";
@@ -147,11 +152,17 @@ function ReportView({
       ) : null}
 
       {closed ? (
-        <p className="mb-6 rounded-xl border border-dashed border-border-strong p-8 text-center text-sm text-muted-foreground">
-          Tidak ada janji temu pada {formatLongDate(day.date)}.
-        </p>
+        <EmptyDay day={day} today={report.today} />
       ) : (
-        <Kpis day={day} />
+        <Kpis
+          day={day}
+          today={report.today}
+          previous={
+            [...report.days]
+              .reverse()
+              .find((d) => d.date < day.date && d.total > 0) ?? null
+          }
+        />
       )}
 
       {!closed ? <DoctorTable day={day} absent={absent} /> : null}
@@ -159,7 +170,57 @@ function ReportView({
   );
 }
 
-function Kpis({ day }: { day: DayRecap }) {
+/** Keadaan kosong: bedakan klinik tutup dari hari praktik tanpa janji. */
+function EmptyDay({ day, today }: { day: DayRecap; today: string }) {
+  const closed = day.practicingDoctors === 0;
+  const Icon = closed ? CalendarOff : Inbox;
+  return (
+    <div className="mb-6 grid justify-items-center gap-3 rounded-xl border border-dashed border-border-strong bg-card px-6 py-10 text-center">
+      <Icon className="size-8 text-primary" aria-hidden="true" />
+      <p className="font-semibold">
+        {closed
+          ? `Klinik tutup pada ${formatLongDate(day.date)}`
+          : `Belum ada janji temu pada ${formatLongDate(day.date)}`}
+      </p>
+      <p className="max-w-md text-sm text-muted-foreground">
+        {closed
+          ? "Tidak ada dokter yang punya jam praktik di hari ini."
+          : day.date === today
+            ? `${day.practicingDoctors} dokter praktik hari ini. Booking baru akan langsung terhitung di sini.`
+            : `${day.practicingDoctors} dokter praktik, tetapi tidak ada pasien yang booking.`}
+      </p>
+    </div>
+  );
+}
+
+/** "+2 dibanding Sab 21" — perubahan dari hari praktik sebelumnya. */
+function compare(
+  value: number,
+  previous: DayRecap | null,
+  key: "total" | "completed",
+) {
+  if (!previous) return null;
+  const diff = value - previous[key];
+  const when = `${DAY_SHORT[previous.dayOfWeek]} ${dayNumber(previous.date)}`;
+  if (diff === 0) return { icon: Minus, text: `sama dengan ${when}` };
+  return {
+    icon: diff > 0 ? TrendingUp : TrendingDown,
+    text: `${diff > 0 ? "+" : "−"}${Math.abs(diff)} dibanding ${when}`,
+  };
+}
+
+function Kpis({
+  day,
+  today,
+  previous,
+}: {
+  day: DayRecap;
+  today: string;
+  previous: DayRecap | null;
+}) {
+  const totalDelta = compare(day.total, previous, "total");
+  const doneDelta =
+    day.date === today ? null : compare(day.completed, previous, "completed");
   return (
     <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatTile
@@ -167,7 +228,8 @@ function Kpis({ day }: { day: DayRecap }) {
         tone="bg-primary-50 text-primary"
         label="Janji temu"
         value={day.total}
-        caption={`${day.doctors.length} dokter praktik`}
+        caption={`${day.doctors.length} dari ${day.practicingDoctors} dokter praktik punya pasien`}
+        delta={totalDelta}
       />
       <StatTile
         icon={Check}
@@ -175,6 +237,7 @@ function Kpis({ day }: { day: DayRecap }) {
         label="Selesai"
         value={day.completed}
         caption={`${percent(day.completed, day.total)} dari janji`}
+        delta={doneDelta}
       />
       <StatTile
         icon={UserX}
@@ -188,7 +251,13 @@ function Kpis({ day }: { day: DayRecap }) {
         tone="bg-info-soft text-info"
         label="Belum ditangani"
         value={day.waiting}
-        caption={day.waiting ? "Masih menunggu" : "Tidak ada"}
+        caption={
+          day.waiting
+            ? day.date === today
+              ? "Masih menunggu"
+              : "Belum ditandai dokter"
+            : "Semua sudah ditandai"
+        }
       />
     </div>
   );
@@ -200,12 +269,14 @@ function StatTile({
   label,
   value,
   caption,
+  delta,
 }: {
   icon: LucideIcon;
   tone: string;
   label: string;
   value: number;
   caption: ReactNode;
+  delta?: { icon: LucideIcon; text: string } | null;
 }) {
   return (
     <div
@@ -217,7 +288,7 @@ function StatTile({
       <span
         aria-hidden="true"
         className={cn(
-          "row-span-3 inline-flex size-12 items-center justify-center rounded-md",
+          "row-span-3 inline-flex size-12 items-center justify-center self-start rounded-md",
           tone,
         )}
       >
@@ -228,6 +299,12 @@ function StatTile({
         {value}
       </p>
       <p className="text-xs text-muted-foreground">{caption}</p>
+      {delta ? (
+        <p className="col-start-2 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          <delta.icon className="size-3.5" aria-hidden="true" />
+          {delta.text}
+        </p>
+      ) : null}
     </div>
   );
 }

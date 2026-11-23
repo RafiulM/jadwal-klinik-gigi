@@ -39,10 +39,19 @@ function recap(date: string): DayRecap {
   });
   const sum = (key: "total" | "completed" | "noShow" | "waiting") =>
     doctors.reduce((acc, r) => acc + r[key], 0);
+  const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
+  const practice: Record<string, number[]> = {
+    rina: [1, 3, 5],
+    bagus: [2, 4, 6],
+    maya: [1, 2, 4, 6],
+  };
   return {
     date,
-    dayOfWeek: new Date(`${date}T00:00:00Z`).getUTCDay(),
+    dayOfWeek,
     doctors,
+    practicingDoctors: Object.values(practice).filter((days) =>
+      days.includes(dayOfWeek),
+    ).length,
     total: sum("total"),
     completed: sum("completed"),
     noShow: sum("noShow"),
