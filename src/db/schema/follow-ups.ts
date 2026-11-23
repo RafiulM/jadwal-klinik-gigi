@@ -54,6 +54,9 @@ export const followUps = pgTable(
     intervalDays: integer("interval_days"),
     status: followUpStatus("status").default("pending").notNull(),
     notes: text("notes").default("").notNull(),
+    // Pengingat kontrol dari n8n: kapan terakhir dikirim dan berapa kali.
+    lastRemindedAt: timestamp("last_reminded_at", { withTimezone: true }),
+    reminderCount: integer("reminder_count").default(0).notNull(),
     createdBy: text("created_by").references(() => user.id, {
       onDelete: "set null",
     }),

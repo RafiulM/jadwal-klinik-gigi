@@ -1,5 +1,7 @@
 import {
   index,
+  integer,
+  text,
   jsonb,
   pgEnum,
   pgTable,
@@ -35,6 +37,9 @@ export const outboxEvents = pgTable(
       .defaultNow()
       .notNull(),
     processedAt: timestamp("processed_at", { withTimezone: true }),
+    // Berapa kali n8n mengambil event ini dan galat terakhirnya (tanpa rahasia).
+    attempts: integer("attempts").default(0).notNull(),
+    lastError: text("last_error"),
   },
   (table) => [
     index("outbox_events_status_available_idx").on(

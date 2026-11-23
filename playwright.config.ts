@@ -26,6 +26,8 @@ export default defineConfig({
       BETTER_AUTH_URL: "http://localhost:3101",
       DATABASE_URL: testUrl,
       MIGRATION_DATABASE_URL: testUrl,
+      // Kunci uji integrasi n8n (hanya untuk server e2e sekali pakai).
+      N8N_API_KEY: "e2e-n8n-integration-key-0123456789abcdef",
     },
     gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
   },

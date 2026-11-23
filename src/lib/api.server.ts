@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { ZodError } from "zod";
 import { auth } from "@/lib/auth.server";
 import { env } from "@/lib/env.server";
@@ -131,6 +132,38 @@ export function withClinicAdmin(
   handler: (session: Session) => Promise<Response>,
 ) {
   return withApiPermission(request, { clinic: ["manage"] }, handler);
+}
+
+function sameSecret(given: string, expected: string) {
+  // Bandingkan hash berpanjang tetap agar waktu tidak membocorkan isi kunci.
+  const a = createHash("sha256").update(given).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+// Endpoint server-ke-server untuk n8n (/api/integrations/n8n/*). Tanpa cookie
+// sesi: n8n mengirim `Authorization: Bearer <N8N_API_KEY>` (atau header
+// `X-API-Key`). Bila N8N_API_KEY belum diatur, integrasi dianggap mati (503).
+export function withIntegrationKey(
+  request: Request,
+  handler: () => Promise<Response>,
+) {
+  return respond(async () => {
+    const expected = env.N8N_API_KEY;
+    if (!expected)
+      throw new ApiError(
+        503,
+        "INTEGRATION_DISABLED",
+        "Integrasi n8n belum diaktifkan. Atur N8N_API_KEY di server.",
+      );
+    const header = request.headers.get("authorization") ?? "";
+    const given = header.toLowerCase().startsWith("bearer ")
+      ? header.slice(7).trim()
+      : (request.headers.get("x-api-key") ?? "").trim();
+    if (!given || !sameSecret(given, expected))
+      throw new ApiError(401, "UNAUTHORIZED", "Kunci integrasi tidak valid.");
+    return handler();
+  });
 }
 
 export async function readJson(request: Request): Promise<unknown> {

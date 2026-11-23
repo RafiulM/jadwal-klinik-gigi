@@ -43,10 +43,17 @@ import { Route as ApiAdminNotesIdRouteImport } from './routes/api/admin/notes/$i
 import { Route as ApiAdminServicesIndexRouteImport } from './routes/api/admin/services/index'
 import { Route as ApiAdminServicesIdRouteImport } from './routes/api/admin/services/$id'
 import { Route as ApiDoctorAppointmentsIdRouteImport } from './routes/api/doctor/appointments/$id'
+import { Route as ApiIntegrationsN8nPingRouteImport } from './routes/api/integrations/n8n/ping'
+import { Route as ApiIntegrationsN8nRemindersRouteImport } from './routes/api/integrations/n8n/reminders'
 import { Route as ApiPatientsIdHistoryRouteImport } from './routes/api/patients/$id/history'
 import { Route as ApiScheduleAppointmentsIdRouteImport } from './routes/api/schedule/appointments/$id'
 import { Route as ApiAdminDoctorsIdScheduleRouteImport } from './routes/api/admin/doctors/$id/schedule'
 import { Route as ApiDoctorAppointmentsIdNoteRouteImport } from './routes/api/doctor/appointments/$id/note'
+import { Route as ApiIntegrationsN8nFollowUpsDueRouteImport } from './routes/api/integrations/n8n/follow-ups/due'
+import { Route as ApiIntegrationsN8nOutboxClaimRouteImport } from './routes/api/integrations/n8n/outbox/claim'
+import { Route as ApiIntegrationsN8nReportsDailyRouteImport } from './routes/api/integrations/n8n/reports/daily'
+import { Route as ApiIntegrationsN8nFollowUpsIdRemindedRouteImport } from './routes/api/integrations/n8n/follow-ups/$id/reminded'
+import { Route as ApiIntegrationsN8nOutboxIdAckRouteImport } from './routes/api/integrations/n8n/outbox/$id/ack'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -216,6 +223,17 @@ const ApiDoctorAppointmentsIdRoute = ApiDoctorAppointmentsIdRouteImport.update({
   path: '/api/doctor/appointments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntegrationsN8nPingRoute = ApiIntegrationsN8nPingRouteImport.update({
+  id: '/api/integrations/n8n/ping',
+  path: '/api/integrations/n8n/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIntegrationsN8nRemindersRoute =
+  ApiIntegrationsN8nRemindersRouteImport.update({
+    id: '/api/integrations/n8n/reminders',
+    path: '/api/integrations/n8n/reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPatientsIdHistoryRoute = ApiPatientsIdHistoryRouteImport.update({
   id: '/api/patients/$id/history',
   path: '/api/patients/$id/history',
@@ -238,6 +256,36 @@ const ApiDoctorAppointmentsIdNoteRoute =
     id: '/note',
     path: '/note',
     getParentRoute: () => ApiDoctorAppointmentsIdRoute,
+  } as any)
+const ApiIntegrationsN8nFollowUpsDueRoute =
+  ApiIntegrationsN8nFollowUpsDueRouteImport.update({
+    id: '/api/integrations/n8n/follow-ups/due',
+    path: '/api/integrations/n8n/follow-ups/due',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsN8nOutboxClaimRoute =
+  ApiIntegrationsN8nOutboxClaimRouteImport.update({
+    id: '/api/integrations/n8n/outbox/claim',
+    path: '/api/integrations/n8n/outbox/claim',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsN8nReportsDailyRoute =
+  ApiIntegrationsN8nReportsDailyRouteImport.update({
+    id: '/api/integrations/n8n/reports/daily',
+    path: '/api/integrations/n8n/reports/daily',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsN8nFollowUpsIdRemindedRoute =
+  ApiIntegrationsN8nFollowUpsIdRemindedRouteImport.update({
+    id: '/api/integrations/n8n/follow-ups/$id/reminded',
+    path: '/api/integrations/n8n/follow-ups/$id/reminded',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiIntegrationsN8nOutboxIdAckRoute =
+  ApiIntegrationsN8nOutboxIdAckRouteImport.update({
+    id: '/api/integrations/n8n/outbox/$id/ack',
+    path: '/api/integrations/n8n/outbox/$id/ack',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -270,6 +318,8 @@ export interface FileRoutesByFullPath {
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/admin/services/$id': typeof ApiAdminServicesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/integrations/n8n/ping': typeof ApiIntegrationsN8nPingRoute
+  '/api/integrations/n8n/reminders': typeof ApiIntegrationsN8nRemindersRoute
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/doctors/': typeof ApiAdminDoctorsIndexRoute
@@ -277,6 +327,11 @@ export interface FileRoutesByFullPath {
   '/api/admin/services/': typeof ApiAdminServicesIndexRoute
   '/api/admin/doctors/$id/schedule': typeof ApiAdminDoctorsIdScheduleRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
+  '/api/integrations/n8n/follow-ups/due': typeof ApiIntegrationsN8nFollowUpsDueRoute
+  '/api/integrations/n8n/outbox/claim': typeof ApiIntegrationsN8nOutboxClaimRoute
+  '/api/integrations/n8n/reports/daily': typeof ApiIntegrationsN8nReportsDailyRoute
+  '/api/integrations/n8n/follow-ups/$id/reminded': typeof ApiIntegrationsN8nFollowUpsIdRemindedRoute
+  '/api/integrations/n8n/outbox/$id/ack': typeof ApiIntegrationsN8nOutboxIdAckRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -308,6 +363,8 @@ export interface FileRoutesByTo {
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/admin/services/$id': typeof ApiAdminServicesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/integrations/n8n/ping': typeof ApiIntegrationsN8nPingRoute
+  '/api/integrations/n8n/reminders': typeof ApiIntegrationsN8nRemindersRoute
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/doctors': typeof ApiAdminDoctorsIndexRoute
@@ -315,6 +372,11 @@ export interface FileRoutesByTo {
   '/api/admin/services': typeof ApiAdminServicesIndexRoute
   '/api/admin/doctors/$id/schedule': typeof ApiAdminDoctorsIdScheduleRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
+  '/api/integrations/n8n/follow-ups/due': typeof ApiIntegrationsN8nFollowUpsDueRoute
+  '/api/integrations/n8n/outbox/claim': typeof ApiIntegrationsN8nOutboxClaimRoute
+  '/api/integrations/n8n/reports/daily': typeof ApiIntegrationsN8nReportsDailyRoute
+  '/api/integrations/n8n/follow-ups/$id/reminded': typeof ApiIntegrationsN8nFollowUpsIdRemindedRoute
+  '/api/integrations/n8n/outbox/$id/ack': typeof ApiIntegrationsN8nOutboxIdAckRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -349,6 +411,8 @@ export interface FileRoutesById {
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/admin/services/$id': typeof ApiAdminServicesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/integrations/n8n/ping': typeof ApiIntegrationsN8nPingRoute
+  '/api/integrations/n8n/reminders': typeof ApiIntegrationsN8nRemindersRoute
   '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/schedule/appointments/$id': typeof ApiScheduleAppointmentsIdRoute
   '/api/admin/doctors/': typeof ApiAdminDoctorsIndexRoute
@@ -356,6 +420,11 @@ export interface FileRoutesById {
   '/api/admin/services/': typeof ApiAdminServicesIndexRoute
   '/api/admin/doctors/$id/schedule': typeof ApiAdminDoctorsIdScheduleRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
+  '/api/integrations/n8n/follow-ups/due': typeof ApiIntegrationsN8nFollowUpsDueRoute
+  '/api/integrations/n8n/outbox/claim': typeof ApiIntegrationsN8nOutboxClaimRoute
+  '/api/integrations/n8n/reports/daily': typeof ApiIntegrationsN8nReportsDailyRoute
+  '/api/integrations/n8n/follow-ups/$id/reminded': typeof ApiIntegrationsN8nFollowUpsIdRemindedRoute
+  '/api/integrations/n8n/outbox/$id/ack': typeof ApiIntegrationsN8nOutboxIdAckRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -389,6 +458,8 @@ export interface FileRouteTypes {
     | '/api/admin/notes/$id'
     | '/api/admin/services/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/integrations/n8n/ping'
+    | '/api/integrations/n8n/reminders'
     | '/api/patients/$id/history'
     | '/api/schedule/appointments/$id'
     | '/api/admin/doctors/'
@@ -396,6 +467,11 @@ export interface FileRouteTypes {
     | '/api/admin/services/'
     | '/api/admin/doctors/$id/schedule'
     | '/api/doctor/appointments/$id/note'
+    | '/api/integrations/n8n/follow-ups/due'
+    | '/api/integrations/n8n/outbox/claim'
+    | '/api/integrations/n8n/reports/daily'
+    | '/api/integrations/n8n/follow-ups/$id/reminded'
+    | '/api/integrations/n8n/outbox/$id/ack'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -427,6 +503,8 @@ export interface FileRouteTypes {
     | '/api/admin/notes/$id'
     | '/api/admin/services/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/integrations/n8n/ping'
+    | '/api/integrations/n8n/reminders'
     | '/api/patients/$id/history'
     | '/api/schedule/appointments/$id'
     | '/api/admin/doctors'
@@ -434,6 +512,11 @@ export interface FileRouteTypes {
     | '/api/admin/services'
     | '/api/admin/doctors/$id/schedule'
     | '/api/doctor/appointments/$id/note'
+    | '/api/integrations/n8n/follow-ups/due'
+    | '/api/integrations/n8n/outbox/claim'
+    | '/api/integrations/n8n/reports/daily'
+    | '/api/integrations/n8n/follow-ups/$id/reminded'
+    | '/api/integrations/n8n/outbox/$id/ack'
   id:
     | '__root__'
     | '/'
@@ -467,6 +550,8 @@ export interface FileRouteTypes {
     | '/api/admin/notes/$id'
     | '/api/admin/services/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/integrations/n8n/ping'
+    | '/api/integrations/n8n/reminders'
     | '/api/patients/$id/history'
     | '/api/schedule/appointments/$id'
     | '/api/admin/doctors/'
@@ -474,6 +559,11 @@ export interface FileRouteTypes {
     | '/api/admin/services/'
     | '/api/admin/doctors/$id/schedule'
     | '/api/doctor/appointments/$id/note'
+    | '/api/integrations/n8n/follow-ups/due'
+    | '/api/integrations/n8n/outbox/claim'
+    | '/api/integrations/n8n/reports/daily'
+    | '/api/integrations/n8n/follow-ups/$id/reminded'
+    | '/api/integrations/n8n/outbox/$id/ack'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -500,11 +590,18 @@ export interface RootRouteChildren {
   ApiAdminNotesIdRoute: typeof ApiAdminNotesIdRoute
   ApiAdminServicesIdRoute: typeof ApiAdminServicesIdRoute
   ApiDoctorAppointmentsIdRoute: typeof ApiDoctorAppointmentsIdRouteWithChildren
+  ApiIntegrationsN8nPingRoute: typeof ApiIntegrationsN8nPingRoute
+  ApiIntegrationsN8nRemindersRoute: typeof ApiIntegrationsN8nRemindersRoute
   ApiPatientsIdHistoryRoute: typeof ApiPatientsIdHistoryRoute
   ApiScheduleAppointmentsIdRoute: typeof ApiScheduleAppointmentsIdRoute
   ApiAdminDoctorsIndexRoute: typeof ApiAdminDoctorsIndexRoute
   ApiAdminNotesIndexRoute: typeof ApiAdminNotesIndexRoute
   ApiAdminServicesIndexRoute: typeof ApiAdminServicesIndexRoute
+  ApiIntegrationsN8nFollowUpsDueRoute: typeof ApiIntegrationsN8nFollowUpsDueRoute
+  ApiIntegrationsN8nOutboxClaimRoute: typeof ApiIntegrationsN8nOutboxClaimRoute
+  ApiIntegrationsN8nReportsDailyRoute: typeof ApiIntegrationsN8nReportsDailyRoute
+  ApiIntegrationsN8nFollowUpsIdRemindedRoute: typeof ApiIntegrationsN8nFollowUpsIdRemindedRoute
+  ApiIntegrationsN8nOutboxIdAckRoute: typeof ApiIntegrationsN8nOutboxIdAckRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -747,6 +844,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDoctorAppointmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/n8n/ping': {
+      id: '/api/integrations/n8n/ping'
+      path: '/api/integrations/n8n/ping'
+      fullPath: '/api/integrations/n8n/ping'
+      preLoaderRoute: typeof ApiIntegrationsN8nPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/n8n/reminders': {
+      id: '/api/integrations/n8n/reminders'
+      path: '/api/integrations/n8n/reminders'
+      fullPath: '/api/integrations/n8n/reminders'
+      preLoaderRoute: typeof ApiIntegrationsN8nRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/patients/$id/history': {
       id: '/api/patients/$id/history'
       path: '/api/patients/$id/history'
@@ -774,6 +885,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/doctor/appointments/$id/note'
       preLoaderRoute: typeof ApiDoctorAppointmentsIdNoteRouteImport
       parentRoute: typeof ApiDoctorAppointmentsIdRoute
+    }
+    '/api/integrations/n8n/follow-ups/due': {
+      id: '/api/integrations/n8n/follow-ups/due'
+      path: '/api/integrations/n8n/follow-ups/due'
+      fullPath: '/api/integrations/n8n/follow-ups/due'
+      preLoaderRoute: typeof ApiIntegrationsN8nFollowUpsDueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/n8n/outbox/claim': {
+      id: '/api/integrations/n8n/outbox/claim'
+      path: '/api/integrations/n8n/outbox/claim'
+      fullPath: '/api/integrations/n8n/outbox/claim'
+      preLoaderRoute: typeof ApiIntegrationsN8nOutboxClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/n8n/reports/daily': {
+      id: '/api/integrations/n8n/reports/daily'
+      path: '/api/integrations/n8n/reports/daily'
+      fullPath: '/api/integrations/n8n/reports/daily'
+      preLoaderRoute: typeof ApiIntegrationsN8nReportsDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/n8n/follow-ups/$id/reminded': {
+      id: '/api/integrations/n8n/follow-ups/$id/reminded'
+      path: '/api/integrations/n8n/follow-ups/$id/reminded'
+      fullPath: '/api/integrations/n8n/follow-ups/$id/reminded'
+      preLoaderRoute: typeof ApiIntegrationsN8nFollowUpsIdRemindedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/n8n/outbox/$id/ack': {
+      id: '/api/integrations/n8n/outbox/$id/ack'
+      path: '/api/integrations/n8n/outbox/$id/ack'
+      fullPath: '/api/integrations/n8n/outbox/$id/ack'
+      preLoaderRoute: typeof ApiIntegrationsN8nOutboxIdAckRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -861,11 +1007,19 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminNotesIdRoute: ApiAdminNotesIdRoute,
   ApiAdminServicesIdRoute: ApiAdminServicesIdRoute,
   ApiDoctorAppointmentsIdRoute: ApiDoctorAppointmentsIdRouteWithChildren,
+  ApiIntegrationsN8nPingRoute: ApiIntegrationsN8nPingRoute,
+  ApiIntegrationsN8nRemindersRoute: ApiIntegrationsN8nRemindersRoute,
   ApiPatientsIdHistoryRoute: ApiPatientsIdHistoryRoute,
   ApiScheduleAppointmentsIdRoute: ApiScheduleAppointmentsIdRoute,
   ApiAdminDoctorsIndexRoute: ApiAdminDoctorsIndexRoute,
   ApiAdminNotesIndexRoute: ApiAdminNotesIndexRoute,
   ApiAdminServicesIndexRoute: ApiAdminServicesIndexRoute,
+  ApiIntegrationsN8nFollowUpsDueRoute: ApiIntegrationsN8nFollowUpsDueRoute,
+  ApiIntegrationsN8nOutboxClaimRoute: ApiIntegrationsN8nOutboxClaimRoute,
+  ApiIntegrationsN8nReportsDailyRoute: ApiIntegrationsN8nReportsDailyRoute,
+  ApiIntegrationsN8nFollowUpsIdRemindedRoute:
+    ApiIntegrationsN8nFollowUpsIdRemindedRoute,
+  ApiIntegrationsN8nOutboxIdAckRoute: ApiIntegrationsN8nOutboxIdAckRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
