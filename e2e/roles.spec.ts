@@ -187,11 +187,23 @@ test("sesi aktif dan penjaga rute mengikuti peran staf", async ({
   await expect(page).toHaveURL(/\/rekap$/);
   await page.goto("/dokter");
   await expect(page).toHaveURL(/\/rekap$/);
+  await expect(
+    page.getByRole("heading", { name: "Rekap harian" }),
+  ).toBeVisible();
+  // Menu pemilik hanya rekap dan papan jadwal.
+  const menu = page.getByRole("navigation", { name: "Menu staf" });
+  await expect(menu.getByRole("link")).toHaveText([
+    "Rekap harian",
+    "Papan jadwal",
+  ]);
 
-  // Admin: ke halaman dokter diarahkan ke papan jadwal.
+  // Admin: ke halaman dokter diarahkan ke papan jadwal; rekap khusus pemilik.
   await setRole(email, "admin");
   await page.goto("/dokter");
   await expect(page).toHaveURL(/\/jadwal$/);
+  await page.goto("/rekap");
+  await expect(page).toHaveURL(/\/jadwal$/);
+  await expect(menu.getByRole("link", { name: "Rekap harian" })).toHaveCount(0);
   await page.goto("/masuk");
   await expect(page).toHaveURL(/\/jadwal$/);
 
