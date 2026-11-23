@@ -19,6 +19,7 @@ import { Route as ProtectedDokterRouteImport } from './routes/_protected/dokter'
 import { Route as ProtectedJadwalRouteImport } from './routes/_protected/jadwal'
 import { Route as ProtectedKelolaRouteImport } from './routes/_protected/kelola'
 import { Route as ProtectedKontrolRouteImport } from './routes/_protected/kontrol'
+import { Route as ProtectedRekapRouteImport } from './routes/_protected/rekap'
 import { Route as ProtectedTanpaAksesRouteImport } from './routes/_protected/tanpa-akses'
 import { Route as JanjiCodeRouteImport } from './routes/janji/$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -91,6 +92,11 @@ const ProtectedKelolaRoute = ProtectedKelolaRouteImport.update({
 const ProtectedKontrolRoute = ProtectedKontrolRouteImport.update({
   id: '/kontrol',
   path: '/kontrol',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedRekapRoute = ProtectedRekapRouteImport.update({
+  id: '/rekap',
+  path: '/rekap',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedTanpaAksesRoute = ProtectedTanpaAksesRouteImport.update({
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
+  '/rekap': typeof ProtectedRekapRoute
   '/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/jadwal': typeof ProtectedJadwalRoute
   '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
+  '/rekap': typeof ProtectedRekapRoute
   '/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/_protected/jadwal': typeof ProtectedJadwalRoute
   '/_protected/kelola': typeof ProtectedKelolaRoute
   '/_protected/kontrol': typeof ProtectedKontrolRoute
+  '/_protected/rekap': typeof ProtectedRekapRoute
   '/_protected/tanpa-akses': typeof ProtectedTanpaAksesRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -341,6 +350,7 @@ export interface FileRouteTypes {
     | '/jadwal'
     | '/kelola'
     | '/kontrol'
+    | '/rekap'
     | '/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
@@ -376,6 +386,7 @@ export interface FileRouteTypes {
     | '/jadwal'
     | '/kelola'
     | '/kontrol'
+    | '/rekap'
     | '/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/_protected/jadwal'
     | '/_protected/kelola'
     | '/_protected/kontrol'
+    | '/_protected/rekap'
     | '/_protected/tanpa-akses'
     | '/janji/$code'
     | '/api/auth/$'
@@ -539,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/kontrol'
       fullPath: '/kontrol'
       preLoaderRoute: typeof ProtectedKontrolRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/rekap': {
+      id: '/_protected/rekap'
+      path: '/rekap'
+      fullPath: '/rekap'
+      preLoaderRoute: typeof ProtectedRekapRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/tanpa-akses': {
@@ -736,6 +755,7 @@ interface ProtectedRouteChildren {
   ProtectedJadwalRoute: typeof ProtectedJadwalRoute
   ProtectedKelolaRoute: typeof ProtectedKelolaRoute
   ProtectedKontrolRoute: typeof ProtectedKontrolRoute
+  ProtectedRekapRoute: typeof ProtectedRekapRoute
   ProtectedTanpaAksesRoute: typeof ProtectedTanpaAksesRoute
 }
 
@@ -744,6 +764,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedJadwalRoute: ProtectedJadwalRoute,
   ProtectedKelolaRoute: ProtectedKelolaRoute,
   ProtectedKontrolRoute: ProtectedKontrolRoute,
+  ProtectedRekapRoute: ProtectedRekapRoute,
   ProtectedTanpaAksesRoute: ProtectedTanpaAksesRoute,
 }
 
