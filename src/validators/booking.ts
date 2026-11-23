@@ -4,20 +4,11 @@ import {
   canonicalPhone,
   normalizePhone,
 } from "@/features/booking/patient-validation";
-
-const uuid = z.string().uuid();
+import { isoDate, uuid } from "./common";
 
 export const doctorsQuerySchema = z.object({ serviceId: uuid }).strict();
 
 export type DoctorsQuery = z.infer<typeof doctorsQuerySchema>;
-
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Gunakan format tanggal YYYY-MM-DD.")
-  .refine(
-    (value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
-    "Tanggal tidak valid.",
-  );
 
 export const availabilityQuerySchema = z
   .object({

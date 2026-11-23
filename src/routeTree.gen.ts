@@ -25,6 +25,7 @@ import { Route as ApiBookingCodeRouteImport } from './routes/api/booking/$code'
 import { Route as ApiBookingAvailabilityRouteImport } from './routes/api/booking/availability'
 import { Route as ApiBookingDoctorsRouteImport } from './routes/api/booking/doctors'
 import { Route as ApiBookingServicesRouteImport } from './routes/api/booking/services'
+import { Route as ApiDoctorTodayRouteImport } from './routes/api/doctor/today'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
 import { Route as ApiAdminNotesIndexRouteImport } from './routes/api/admin/notes/index'
@@ -108,6 +109,11 @@ const ApiBookingServicesRoute = ApiBookingServicesRouteImport.update({
   path: '/api/booking/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDoctorTodayRoute = ApiDoctorTodayRouteImport.update({
+  id: '/api/doctor/today',
+  path: '/api/doctor/today',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotesIndexRoute = ApiNotesIndexRouteImport.update({
   id: '/api/notes/',
   path: '/api/notes/',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
+  '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
+  '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/booking': typeof ApiBookingIndexRoute
   '/api/notes': typeof ApiNotesIndexRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/api/booking/availability': typeof ApiBookingAvailabilityRoute
   '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
+  '/api/doctor/today': typeof ApiDoctorTodayRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/booking/': typeof ApiBookingIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
+    | '/api/doctor/today'
     | '/api/notes/$id'
     | '/api/booking/'
     | '/api/notes/'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
+    | '/api/doctor/today'
     | '/api/notes/$id'
     | '/api/booking'
     | '/api/notes'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/api/booking/availability'
     | '/api/booking/doctors'
     | '/api/booking/services'
+    | '/api/doctor/today'
     | '/api/notes/$id'
     | '/api/booking/'
     | '/api/notes/'
@@ -267,6 +279,7 @@ export interface RootRouteChildren {
   ApiBookingAvailabilityRoute: typeof ApiBookingAvailabilityRoute
   ApiBookingDoctorsRoute: typeof ApiBookingDoctorsRoute
   ApiBookingServicesRoute: typeof ApiBookingServicesRoute
+  ApiDoctorTodayRoute: typeof ApiDoctorTodayRoute
   ApiNotesIdRoute: typeof ApiNotesIdRoute
   ApiBookingIndexRoute: typeof ApiBookingIndexRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
@@ -388,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBookingServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/doctor/today': {
+      id: '/api/doctor/today'
+      path: '/api/doctor/today'
+      fullPath: '/api/doctor/today'
+      preLoaderRoute: typeof ApiDoctorTodayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notes/': {
       id: '/api/notes/'
       path: '/api/notes'
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBookingAvailabilityRoute: ApiBookingAvailabilityRoute,
   ApiBookingDoctorsRoute: ApiBookingDoctorsRoute,
   ApiBookingServicesRoute: ApiBookingServicesRoute,
+  ApiDoctorTodayRoute: ApiDoctorTodayRoute,
   ApiNotesIdRoute: ApiNotesIdRoute,
   ApiBookingIndexRoute: ApiBookingIndexRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,

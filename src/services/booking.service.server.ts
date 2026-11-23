@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/index.server";
+import { maskPhone } from "@/lib/phone";
 import {
   addDays,
   clinicNow,
@@ -350,12 +351,6 @@ export async function createBooking(
 }
 
 // --- Detail janji temu dari kode booking (nomor janji) --------------------------
-
-function maskPhone(phone: string) {
-  return phone.length > 8
-    ? `${phone.slice(0, 4)}${"•".repeat(phone.length - 8)}${phone.slice(-4)}`
-    : phone;
-}
 
 // Kode booking adalah bukti yang dipegang pasien. Nomor HP disamarkan karena
 // siapa pun yang memegang kode bisa membuka halaman ini.
