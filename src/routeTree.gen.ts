@@ -17,6 +17,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiBookingServicesRouteImport } from './routes/api/booking/services'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
 import { Route as ApiAdminNotesIndexRouteImport } from './routes/api/admin/notes/index'
@@ -60,6 +61,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookingServicesRoute = ApiBookingServicesRouteImport.update({
+  id: '/api/booking/services',
+  path: '/api/booking/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotesIndexRoute = ApiNotesIndexRouteImport.update({
   id: '/api/notes/',
   path: '/api/notes/',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/_protected/admin': typeof ProtectedAdminRoute
   '/_protected/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes/'
     | '/api/admin/notes/$id'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes'
     | '/api/admin/notes/$id'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/_protected/admin'
     | '/_protected/app'
     | '/api/auth/$'
+    | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes/'
     | '/api/admin/notes/$id'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ProtectedRoute: typeof ProtectedRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBookingServicesRoute: typeof ApiBookingServicesRoute
   ApiNotesIdRoute: typeof ApiNotesIdRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
   ApiAdminNotesIdRoute: typeof ApiAdminNotesIdRoute
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/booking/services': {
+      id: '/api/booking/services'
+      path: '/api/booking/services'
+      fullPath: '/api/booking/services'
+      preLoaderRoute: typeof ApiBookingServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notes/': {
       id: '/api/notes/'
       path: '/api/notes'
@@ -292,6 +312,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ProtectedRoute: ProtectedRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBookingServicesRoute: ApiBookingServicesRoute,
   ApiNotesIdRoute: ApiNotesIdRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,
   ApiAdminNotesIdRoute: ApiAdminNotesIdRoute,

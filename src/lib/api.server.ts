@@ -16,32 +16,24 @@ export class ApiError extends Error {
 type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
 // Shared HTTP concerns only. Domain rules and Drizzle queries live in services.
-export async function withApiSession(
-  request: Request,
-  handler: (session: Session) => Promise<Response>,
-) {
+function assertSameOrigin(request: Request) {
+  // Better Auth protects its own endpoints. Custom mutations need this check too.
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
+  if (
+    request.headers.get("origin") !== new URL(env.BETTER_AUTH_URL).origin ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  )
+    throw new ApiError(
+      403,
+      "FORBIDDEN_ORIGIN",
+      "Send this request from the app's configured origin.",
+    );
+}
+
+async function respond(run: () => Promise<Response>) {
   let response: Response;
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-      query: { disableCookieCache: true },
-    });
-    if (!session)
-      throw new ApiError(401, "UNAUTHORIZED", "Sign in to continue.");
-
-    // Better Auth protects its own endpoints. Custom cookie-authenticated mutations need this check too.
-    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
-      if (
-        request.headers.get("origin") !== new URL(env.BETTER_AUTH_URL).origin ||
-        request.headers.get("sec-fetch-site") === "cross-site"
-      )
-        throw new ApiError(
-          403,
-          "FORBIDDEN_ORIGIN",
-          "Send this request from the app's configured origin.",
-        );
-    }
-    response = await handler(session);
+    response = await run();
   } catch (error) {
     if (error instanceof ApiError) {
       response = Response.json(
@@ -81,6 +73,34 @@ export async function withApiSession(
   }
   response.headers.set("Cache-Control", "private, no-store");
   return response;
+}
+
+export function withApiSession(
+  request: Request,
+  handler: (session: Session) => Promise<Response>,
+) {
+  return respond(async () => {
+    const session = await auth.api.getSession({
+      headers: request.headers,
+      query: { disableCookieCache: true },
+    });
+    if (!session)
+      throw new ApiError(401, "UNAUTHORIZED", "Sign in to continue.");
+    assertSameOrigin(request);
+    return handler(session);
+  });
+}
+
+// Endpoints for patients, who have no account (the booking link). Same error
+// shape and caching as withApiSession; mutations still require this app's origin.
+export function withPublicApi(
+  request: Request,
+  handler: () => Promise<Response>,
+) {
+  return respond(async () => {
+    assertSameOrigin(request);
+    return handler();
+  });
 }
 
 // Same contract as withApiSession, plus a role check before the handler runs.
