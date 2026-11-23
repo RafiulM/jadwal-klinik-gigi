@@ -17,6 +17,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiBookingDoctorsRouteImport } from './routes/api/booking/doctors'
 import { Route as ApiBookingServicesRouteImport } from './routes/api/booking/services'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
@@ -61,6 +62,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookingDoctorsRoute = ApiBookingDoctorsRouteImport.update({
+  id: '/api/booking/doctors',
+  path: '/api/booking/doctors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBookingServicesRoute = ApiBookingServicesRouteImport.update({
   id: '/api/booking/services',
   path: '/api/booking/services',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes/': typeof ApiNotesIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ProtectedAdminRoute
   '/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes': typeof ApiNotesIndexRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/_protected/admin': typeof ProtectedAdminRoute
   '/_protected/app': typeof ProtectedAppRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/booking/doctors': typeof ApiBookingDoctorsRoute
   '/api/booking/services': typeof ApiBookingServicesRoute
   '/api/notes/$id': typeof ApiNotesIdRoute
   '/api/notes/': typeof ApiNotesIndexRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/api/auth/$'
+    | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/_protected/admin'
     | '/_protected/app'
     | '/api/auth/$'
+    | '/api/booking/doctors'
     | '/api/booking/services'
     | '/api/notes/$id'
     | '/api/notes/'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ProtectedRoute: typeof ProtectedRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBookingDoctorsRoute: typeof ApiBookingDoctorsRoute
   ApiBookingServicesRoute: typeof ApiBookingServicesRoute
   ApiNotesIdRoute: typeof ApiNotesIdRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/booking/doctors': {
+      id: '/api/booking/doctors'
+      path: '/api/booking/doctors'
+      fullPath: '/api/booking/doctors'
+      preLoaderRoute: typeof ApiBookingDoctorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/booking/services': {
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ProtectedRoute: ProtectedRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBookingDoctorsRoute: ApiBookingDoctorsRoute,
   ApiBookingServicesRoute: ApiBookingServicesRoute,
   ApiNotesIdRoute: ApiNotesIdRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,
