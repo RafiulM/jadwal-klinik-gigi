@@ -77,6 +77,7 @@ References: [Drizzle PostgreSQL](https://orm.drizzle.team/docs/get-started-postg
 3. Opsional di **Environment Variables**:
    - `CLINIC_ADMIN_EMAILS` — email (dipisah koma) yang otomatis menjadi admin + pemilik saat mendaftar di `/sign-up`.
    - `SEED_SAMPLE_DATA=false` bila tidak ingin layanan dan dokter contoh.
+   - `SEED_DEMO_DATA=true` untuk menambah data demo (janji temu 6 minggu lalu s.d. 2 minggu depan beserta jadwal kontrol) setiap deploy; aman diulang dan tidak mengirim pesan lewat n8n.
 4. Deploy. Urutannya: database sehat → `migrate` menjalankan migrasi (dan data awal bila database kosong) → `app` berjalan.
 5. Untuk n8n, salin nilai `SERVICE_HEX_64_N8N` dari Environment Variables ke credential n8n (lihat `docs/n8n.md`).
 

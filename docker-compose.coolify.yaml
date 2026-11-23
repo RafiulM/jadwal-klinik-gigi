@@ -29,10 +29,16 @@ services:
       DATABASE_URL: postgresql://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_64_POSTGRES}@db:5432/klinik
       # true = isi layanan, dokter contoh, dan jam praktik bila database kosong.
       SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+      # true = tambah data demo (janji temu & kontrol beberapa minggu) tiap deploy;
+      # aman diulang. Hapus lewat: node scripts/seed-demo.mjs --hapus
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
     command:
       - sh
       - -c
-      - node scripts/migrate.mjs && if [ "$$SEED_SAMPLE_DATA" = "true" ]; then node scripts/seed-clinic.mjs; fi
+      - >-
+        node scripts/migrate.mjs &&
+        if [ "$$SEED_SAMPLE_DATA" = "true" ]; then node scripts/seed-clinic.mjs; fi &&
+        if [ "$$SEED_DEMO_DATA" = "true" ]; then node scripts/seed-demo.mjs; fi
     depends_on:
       db:
         condition: service_healthy
