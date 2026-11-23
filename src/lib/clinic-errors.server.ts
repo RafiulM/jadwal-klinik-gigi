@@ -14,6 +14,10 @@ const CLINIC_ERRORS: Record<ClinicError["reason"], [number, string]> = {
     "Belum ada akun dengan email ini. Minta dokter mendaftar dulu lewat halaman Daftar.",
   ],
   DOCTOR_EMAIL_TAKEN: [409, "Email ini sudah ditautkan ke dokter lain."],
+  DOCTOR_IN_USE: [
+    409,
+    "Dokter sudah punya janji temu. Nonaktifkan saja agar riwayat pasien tetap utuh.",
+  ],
 };
 
 /** Ubah ClinicError dari service menjadi respons API berbahasa Indonesia. */

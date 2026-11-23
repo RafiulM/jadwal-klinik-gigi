@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  PHONE_PATTERN,
+  canonicalPhone,
+  normalizePhone,
+} from "@/features/booking/patient-validation";
 import { uuid } from "./common";
 
 // Kelola klinik (admin): layanan, dokter, jam praktik.
@@ -43,3 +48,54 @@ export const updateServiceSchema = z
 
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
+
+const doctorFields = {
+  name: z
+    .string()
+    .trim()
+    .min(1, "Isi nama dokter.")
+    .max(120, "Nama dokter maksimal 120 karakter."),
+  specialization: z.string().trim().max(120, "Bidang maksimal 120 karakter."),
+  // Kosong boleh; bila diisi harus nomor HP Indonesia, disimpan sebagai 08….
+  phone: z
+    .string()
+    .transform(normalizePhone)
+    .refine(
+      (value) => value === "" || PHONE_PATTERN.test(value),
+      "Gunakan nomor HP Indonesia, contoh 0812 3456 7890.",
+    )
+    .transform((value) => (value ? canonicalPhone(value) : "")),
+  // Email akun login dokter (akun dibuat lewat halaman Daftar); null = tanpa akun.
+  accountEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Gunakan alamat email yang valid.")
+    .max(254)
+    .nullable(),
+  serviceIds: z
+    .array(uuid)
+    .min(1, "Pilih minimal satu layanan.")
+    .max(50)
+    .transform((ids) => [...new Set(ids)]),
+};
+
+export const createDoctorSchema = z
+  .object({
+    ...doctorFields,
+    specialization: doctorFields.specialization.default(""),
+    phone: doctorFields.phone.default(""),
+    accountEmail: doctorFields.accountEmail.default(null),
+  })
+  .strict();
+
+export const updateDoctorSchema = z
+  .object({ ...doctorFields, isActive: z.boolean() })
+  .partial()
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Kirim minimal satu perubahan.",
+  });
+
+export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;
+export type UpdateDoctorInput = z.infer<typeof updateDoctorSchema>;
