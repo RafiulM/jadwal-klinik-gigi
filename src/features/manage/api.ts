@@ -4,6 +4,7 @@
 //   GET   /api/admin/doctors         POST /api/admin/doctors
 //   PATCH /api/admin/doctors/:id     (data dokter, layanan, akun, isActive)
 //   GET   /api/admin/doctors/:id/schedule
+//   PUT   /api/admin/doctors/:id/schedule  { slotIntervalMinutes, days }
 import { apiRequest, apiSend } from "@/lib/api-client";
 import {
   MOCK_DOCTORS,
@@ -46,6 +47,15 @@ const http = {
   schedule: (doctorId: string) =>
     apiRequest<DoctorWeekSchedule>(
       `/api/admin/doctors/${encodeURIComponent(doctorId)}/schedule`,
+    ),
+  saveSchedule: (doctorId: string, schedule: DoctorWeekSchedule) =>
+    apiSend<DoctorWeekSchedule>(
+      `/api/admin/doctors/${encodeURIComponent(doctorId)}/schedule`,
+      "PUT",
+      {
+        slotIntervalMinutes: schedule.slotIntervalMinutes,
+        days: schedule.days,
+      },
     ),
 };
 
@@ -108,6 +118,11 @@ const mock: typeof http = {
     await wait(200);
     const schedule = store.schedules[doctorId];
     if (!schedule) throw new Error("Dokter tidak ditemukan.");
+    return structuredClone(schedule);
+  },
+  saveSchedule: async (doctorId, schedule) => {
+    await wait();
+    store.schedules[doctorId] = structuredClone(schedule);
     return structuredClone(schedule);
   },
 };

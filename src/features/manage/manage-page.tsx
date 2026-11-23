@@ -15,14 +15,10 @@ import { ServiceForm, type ServiceInput } from "./service-form";
 import { DoctorForm, type DoctorInput } from "./doctor-form";
 import { cn } from "@/lib/utils";
 import { DoctorsPanel } from "./doctors-panel";
-import { WeekHours } from "./hours-panel";
-import {
-  MOCK_SCHEDULES,
-  type AdminDoctor,
-  type AdminService,
-} from "./mock-data";
+import type { AdminDoctor, AdminService } from "./mock-data";
+import { HoursEditor } from "./hours-editor";
 import { ServicesPanel } from "./services-panel";
-import { EditButton, SelectField, Switch, card } from "./ui";
+import { EditButton, Switch } from "./ui";
 
 type TabId = "layanan" | "dokter" | "jam";
 
@@ -105,8 +101,6 @@ function ManageView({
     setTab(next.id);
     tabRefs.current[next.id]?.focus();
   }
-
-  const schedule = MOCK_SCHEDULES[scheduleDoctor];
 
   function announce(text: string) {
     setError("");
@@ -354,23 +348,15 @@ function ManageView({
           />
         ) : null}
         {tab === "jam" ? (
-          <div className="grid gap-4">
-            <div className={cn(card, "grid gap-3 p-4 md:max-w-md")}>
-              <SelectField
-                id="jam-dokter"
-                label="Dokter"
-                value={scheduleDoctor}
-                onChange={setScheduleDoctor}
-              >
-                {doctors.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </SelectField>
-            </div>
-            {schedule ? <WeekHours schedule={schedule} /> : null}
-          </div>
+          <HoursEditor
+            doctors={doctors}
+            doctorId={scheduleDoctor}
+            onDoctorChange={(id) => {
+              setScheduleDoctor(id);
+              setMessage("");
+            }}
+            onSaved={announce}
+          />
         ) : null}
       </section>
 

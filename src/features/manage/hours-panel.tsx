@@ -60,7 +60,7 @@ export function WeekHours({
     <div className={card}>
       <div
         aria-hidden="true"
-        className="hidden grid-cols-[9rem_minmax(0,1.3fr)_minmax(0,1fr)_5rem] items-center gap-4 rounded-t-xl border-b bg-muted px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:grid"
+        className="hidden grid-cols-[8rem_minmax(15.5rem,1.4fr)_minmax(0,1fr)_5rem] items-center gap-4 rounded-t-xl border-b bg-muted px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:grid"
       >
         <span>Hari</span>
         <span>Jam praktik</span>
@@ -79,7 +79,7 @@ export function WeekHours({
             <li
               key={day.dayOfWeek}
               className={cn(
-                "grid gap-3 p-4 md:grid-cols-[9rem_minmax(0,1.3fr)_minmax(0,1fr)_5rem] md:items-center md:gap-4",
+                "grid gap-3 p-4 md:grid-cols-[8rem_minmax(15.5rem,1.4fr)_minmax(0,1fr)_5rem] md:items-center md:gap-4",
                 i > 0 && "border-t",
               )}
             >
