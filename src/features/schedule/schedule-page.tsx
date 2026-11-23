@@ -4,7 +4,9 @@ import {
   CalendarOff,
   CalendarRange,
   ChevronRight,
+  Inbox,
   List,
+  NotebookPen,
   RotateCcw,
   Search,
   SearchX,
@@ -329,6 +331,17 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
             </ul>
           </div>
 
+          {!week.appointments.length ? (
+            <div
+              role="status"
+              className="flex items-center gap-2 rounded-md bg-primary-50 px-4 py-3 text-sm"
+            >
+              <Inbox className="size-4 text-primary" aria-hidden="true" />
+              Belum ada janji temu minggu ini. Booking baru dari pasien akan
+              muncul di sini otomatis.
+            </div>
+          ) : null}
+
           {filtered && !rows.length ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-primary-50 px-4 py-3 text-sm">
               <span className="inline-flex items-center gap-2">
@@ -448,8 +461,13 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
                         className="grid gap-2 border-t p-4 first:border-t-0 md:table-row md:p-0 md:hover:bg-primary-50"
                       >
                         <Cell label="Jam">
-                          <span className="inline-block rounded-sm bg-muted px-2 py-1 font-bold tabular-nums">
-                            {displayTime(a.time)}
+                          <span className="grid justify-items-start gap-1">
+                            <span className="inline-block rounded-sm bg-muted px-2 py-1 font-bold tabular-nums">
+                              {displayTime(a.time)}
+                            </span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              s.d. {displayTime(a.endTime)}
+                            </span>
                           </span>
                         </Cell>
                         <Cell label="Pasien">
@@ -465,12 +483,25 @@ function ScheduleView({ week }: { week: ScheduleWeek }) {
                                 {a.patient.name}
                               </span>
                               <span className="text-xs text-muted-foreground tabular-nums">
-                                {a.patient.phone}
+                                {a.patient.phone} · {a.code}
                               </span>
                             </span>
                           </span>
                         </Cell>
-                        <Cell label="Layanan">{a.service.name}</Cell>
+                        <Cell label="Layanan">
+                          <span className="grid gap-0.5">
+                            <span>{a.service.name}</span>
+                            {a.notes ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                <NotebookPen
+                                  className="size-3"
+                                  aria-hidden="true"
+                                />
+                                Ada catatan dokter
+                              </span>
+                            ) : null}
+                          </span>
+                        </Cell>
                         <Cell label="Dokter">
                           <span className="flex min-w-0 items-center gap-2">
                             <span
