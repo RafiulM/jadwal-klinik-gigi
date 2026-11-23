@@ -18,6 +18,7 @@ import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedAppRouteImport } from './routes/_protected/app'
 import { Route as ProtectedDokterRouteImport } from './routes/_protected/dokter'
 import { Route as ProtectedJadwalRouteImport } from './routes/_protected/jadwal'
+import { Route as ProtectedKelolaRouteImport } from './routes/_protected/kelola'
 import { Route as ProtectedKontrolRouteImport } from './routes/_protected/kontrol'
 import { Route as JanjiCodeRouteImport } from './routes/janji/$code'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -77,6 +78,11 @@ const ProtectedDokterRoute = ProtectedDokterRouteImport.update({
 const ProtectedJadwalRoute = ProtectedJadwalRouteImport.update({
   id: '/jadwal',
   path: '/jadwal',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedKelolaRoute = ProtectedKelolaRouteImport.update({
+  id: '/kelola',
+  path: '/kelola',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedKontrolRoute = ProtectedKontrolRouteImport.update({
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
   '/jadwal': typeof ProtectedJadwalRoute
+  '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/app': typeof ProtectedAppRoute
   '/dokter': typeof ProtectedDokterRoute
   '/jadwal': typeof ProtectedJadwalRoute
+  '/kelola': typeof ProtectedKelolaRoute
   '/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/_protected/app': typeof ProtectedAppRoute
   '/_protected/dokter': typeof ProtectedDokterRoute
   '/_protected/jadwal': typeof ProtectedJadwalRoute
+  '/_protected/kelola': typeof ProtectedKelolaRoute
   '/_protected/kontrol': typeof ProtectedKontrolRoute
   '/janji/$code': typeof JanjiCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/dokter'
     | '/jadwal'
+    | '/kelola'
     | '/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/dokter'
     | '/jadwal'
+    | '/kelola'
     | '/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/_protected/app'
     | '/_protected/dokter'
     | '/_protected/jadwal'
+    | '/_protected/kelola'
     | '/_protected/kontrol'
     | '/janji/$code'
     | '/api/auth/$'
@@ -414,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: '/jadwal'
       fullPath: '/jadwal'
       preLoaderRoute: typeof ProtectedJadwalRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/kelola': {
+      id: '/_protected/kelola'
+      path: '/kelola'
+      fullPath: '/kelola'
+      preLoaderRoute: typeof ProtectedKelolaRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/kontrol': {
@@ -555,6 +574,7 @@ interface ProtectedRouteChildren {
   ProtectedAppRoute: typeof ProtectedAppRoute
   ProtectedDokterRoute: typeof ProtectedDokterRoute
   ProtectedJadwalRoute: typeof ProtectedJadwalRoute
+  ProtectedKelolaRoute: typeof ProtectedKelolaRoute
   ProtectedKontrolRoute: typeof ProtectedKontrolRoute
 }
 
@@ -563,6 +583,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAppRoute: ProtectedAppRoute,
   ProtectedDokterRoute: ProtectedDokterRoute,
   ProtectedJadwalRoute: ProtectedJadwalRoute,
+  ProtectedKelolaRoute: ProtectedKelolaRoute,
   ProtectedKontrolRoute: ProtectedKontrolRoute,
 }
 
