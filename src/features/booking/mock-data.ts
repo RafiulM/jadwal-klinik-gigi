@@ -106,13 +106,55 @@ export const DOCTORS: Doctor[] = [
 ];
 
 export const DATES: BookingDate[] = [
-  { id: "2026-11-23", dow: 1, short: "Sen", day: "23", long: "Senin, 23 November 2026" },
-  { id: "2026-11-24", dow: 2, short: "Sel", day: "24", long: "Selasa, 24 November 2026" },
-  { id: "2026-11-25", dow: 3, short: "Rab", day: "25", long: "Rabu, 25 November 2026" },
-  { id: "2026-11-26", dow: 4, short: "Kam", day: "26", long: "Kamis, 26 November 2026" },
-  { id: "2026-11-27", dow: 5, short: "Jum", day: "27", long: "Jumat, 27 November 2026" },
-  { id: "2026-11-28", dow: 6, short: "Sab", day: "28", long: "Sabtu, 28 November 2026" },
-  { id: "2026-11-29", dow: 0, short: "Min", day: "29", long: "Minggu, 29 November 2026" },
+  {
+    id: "2026-11-23",
+    dow: 1,
+    short: "Sen",
+    day: "23",
+    long: "Senin, 23 November 2026",
+  },
+  {
+    id: "2026-11-24",
+    dow: 2,
+    short: "Sel",
+    day: "24",
+    long: "Selasa, 24 November 2026",
+  },
+  {
+    id: "2026-11-25",
+    dow: 3,
+    short: "Rab",
+    day: "25",
+    long: "Rabu, 25 November 2026",
+  },
+  {
+    id: "2026-11-26",
+    dow: 4,
+    short: "Kam",
+    day: "26",
+    long: "Kamis, 26 November 2026",
+  },
+  {
+    id: "2026-11-27",
+    dow: 5,
+    short: "Jum",
+    day: "27",
+    long: "Jumat, 27 November 2026",
+  },
+  {
+    id: "2026-11-28",
+    dow: 6,
+    short: "Sab",
+    day: "28",
+    long: "Sabtu, 28 November 2026",
+  },
+  {
+    id: "2026-11-29",
+    dow: 0,
+    short: "Min",
+    day: "29",
+    long: "Minggu, 29 November 2026",
+  },
 ];
 
 /** Slot yang sudah diambil pasien lain, per `dokter|tanggal`. */
@@ -122,7 +164,18 @@ export const TAKEN: Record<string, string[]> = {
   "rina|2026-11-27": ["09.30", "10.00", "10.30", "11.00", "13.30"],
   "bagus|2026-11-24": ["13.00", "13.30", "15.00", "16.30"],
   "bagus|2026-11-26": ["14.00", "14.30"],
-  "bagus|2026-11-28": ["13.00", "13.30", "14.00", "14.30", "15.00", "15.30", "16.00", "16.30", "17.00", "17.30"],
+  "bagus|2026-11-28": [
+    "13.00",
+    "13.30",
+    "14.00",
+    "14.30",
+    "15.00",
+    "15.30",
+    "16.00",
+    "16.30",
+    "17.00",
+    "17.30",
+  ],
   "maya|2026-11-23": ["16.00", "17.30", "18.00"],
   "maya|2026-11-24": ["16.30", "19.00"],
   "maya|2026-11-26": ["16.00", "16.30", "17.00"],

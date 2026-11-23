@@ -25,7 +25,10 @@ export function StepConfirm({
           role="alert"
           className="flex gap-3 rounded-md border border-destructive bg-destructive-soft p-4 text-sm"
         >
-          <CircleAlert className="size-5 shrink-0 text-destructive" aria-hidden="true" />
+          <CircleAlert
+            className="size-5 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
           <p>{error}</p>
         </div>
       ) : null}

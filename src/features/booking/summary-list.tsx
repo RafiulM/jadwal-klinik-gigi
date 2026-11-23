@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export type SummaryRow = { id: string; label: string; icon: ReactNode; value: string };
+export type SummaryRow = {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  value: string;
+};
 
 export function SummaryList({
   rows,

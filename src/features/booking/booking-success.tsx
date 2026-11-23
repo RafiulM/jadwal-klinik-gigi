@@ -41,7 +41,9 @@ export function BookingSuccess({
           <p className="text-xs font-semibold tracking-wide text-on-brand-deep-muted uppercase">
             Kode booking
           </p>
-          <p className="text-[34px] leading-tight font-bold tracking-wide">{code}</p>
+          <p className="text-[34px] leading-tight font-bold tracking-wide">
+            {code}
+          </p>
         </div>
         <div className="border-t-2 border-dashed border-border-strong px-5 py-2">
           <SummaryList rows={rows} />
@@ -49,7 +51,10 @@ export function BookingSuccess({
       </div>
 
       <p className="flex gap-3 rounded-md bg-primary-50 p-4 text-sm">
-        <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <MessageCircle
+          className="mt-0.5 size-4 shrink-0 text-primary"
+          aria-hidden="true"
+        />
         <span>
           Pengingat jadwal akan dikirim ke nomor{" "}
           <strong className="font-semibold whitespace-nowrap">{phone}</strong>.

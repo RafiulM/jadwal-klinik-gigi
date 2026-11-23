@@ -64,7 +64,9 @@ export function StepDoctor({
                 value={doctor.id}
                 checked={checked}
                 onSelect={onSelect}
-                lead={<DoctorAvatar initials={doctor.initials} active={checked} />}
+                lead={
+                  <DoctorAvatar initials={doctor.initials} active={checked} />
+                }
               >
                 <span className="grid gap-1">
                   <span className="text-base leading-snug font-semibold [overflow-wrap:anywhere]">

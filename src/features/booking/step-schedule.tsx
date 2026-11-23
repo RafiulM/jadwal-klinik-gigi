@@ -1,4 +1,10 @@
-import { CalendarSearch, CircleAlert, Sun, Sunrise, Sunset } from "lucide-react";
+import {
+  CalendarSearch,
+  CircleAlert,
+  Sun,
+  Sunrise,
+  Sunset,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BookingDate } from "./mock-data";
 import { StepHeading } from "./step-heading";
@@ -55,7 +61,10 @@ export function StepSchedule({
           role="alert"
           className="flex gap-3 rounded-md border border-destructive bg-destructive-soft p-4"
         >
-          <CircleAlert className="size-5 shrink-0 text-destructive" aria-hidden="true" />
+          <CircleAlert
+            className="size-5 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
           <div className="grid gap-1">
             <p className="font-semibold text-destructive">
               Jam {conflictTime} baru saja diambil pasien lain
@@ -75,7 +84,10 @@ export function StepSchedule({
           {days.map((d) => (
             <label
               key={d.id}
-              className={cn(chip, "justify-items-center gap-1 px-1 py-3 text-center")}
+              className={cn(
+                chip,
+                "justify-items-center gap-1 px-1 py-3 text-center",
+              )}
             >
               <input
                 className="sr-only"
@@ -87,12 +99,16 @@ export function StepSchedule({
                 onChange={() => onSelectDate(d.id)}
                 aria-label={`${d.long}, ${d.label}`}
               />
-              <span className="text-xs leading-tight font-medium">{d.short}</span>
+              <span className="text-xs leading-tight font-medium">
+                {d.short}
+              </span>
               <span className="text-xl leading-tight font-bold">{d.day}</span>
               <span
                 className={cn(
                   "text-xs leading-tight",
-                  selectedDateId === d.id ? "text-primary-foreground" : "text-muted-foreground",
+                  selectedDateId === d.id
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 {d.label}
@@ -117,7 +133,10 @@ export function StepSchedule({
                   return (
                     <label
                       key={t}
-                      className={cn(chip, "min-h-12 place-content-center justify-items-center py-1")}
+                      className={cn(
+                        chip,
+                        "min-h-12 place-content-center justify-items-center py-1",
+                      )}
                     >
                       <input
                         className="sr-only"
@@ -148,7 +167,10 @@ export function StepSchedule({
           ))
         ) : (
           <p className="grid justify-items-center gap-2 rounded-md bg-primary-50 p-6 text-center text-sm text-muted-foreground">
-            <CalendarSearch className="size-7 text-primary" aria-hidden="true" />
+            <CalendarSearch
+              className="size-7 text-primary"
+              aria-hidden="true"
+            />
             Pilih tanggal dulu untuk melihat jam yang masih kosong.
           </p>
         )}

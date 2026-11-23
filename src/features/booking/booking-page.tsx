@@ -108,8 +108,20 @@ export function BookingPage() {
   const trimmedPhone = booking.phone.trim();
 
   const summary = [
-    { id: "layanan", step: 0, label: "Layanan", icon: <Stethoscope />, value: service?.name ?? "" },
-    { id: "dokter", step: 1, label: "Dokter", icon: <UserRound />, value: doctor?.name ?? "" },
+    {
+      id: "layanan",
+      step: 0,
+      label: "Layanan",
+      icon: <Stethoscope />,
+      value: service?.name ?? "",
+    },
+    {
+      id: "dokter",
+      step: 1,
+      label: "Dokter",
+      icon: <UserRound />,
+      value: doctor?.name ?? "",
+    },
     {
       id: "jadwal",
       step: 2,
@@ -133,19 +145,29 @@ export function BookingPage() {
       const current = DOCTORS.find((d) => d.id === prev.doctorId);
       // Dokter yang tidak melayani layanan baru dilepas, beserta jadwalnya.
       if (current && !current.serviceIds.includes(id))
-        return { ...prev, serviceId: id, doctorId: null, dateId: null, time: null };
+        return {
+          ...prev,
+          serviceId: id,
+          doctorId: null,
+          dateId: null,
+          time: null,
+        };
       return { ...prev, serviceId: id };
     });
   }
 
   function chooseDoctor(id: string) {
     setBooking((prev) =>
-      prev.doctorId === id ? prev : { ...prev, doctorId: id, dateId: null, time: null },
+      prev.doctorId === id
+        ? prev
+        : { ...prev, doctorId: id, dateId: null, time: null },
     );
   }
 
   function chooseDate(id: string) {
-    setBooking((prev) => (prev.dateId === id ? prev : { ...prev, dateId: id, time: null }));
+    setBooking((prev) =>
+      prev.dateId === id ? prev : { ...prev, dateId: id, time: null },
+    );
   }
 
   function chooseTime(time: string) {
@@ -154,7 +176,13 @@ export function BookingPage() {
   }
 
   async function submit() {
-    if (status === "submitting" || !booking.doctorId || !booking.dateId || !booking.time) return;
+    if (
+      status === "submitting" ||
+      !booking.doctorId ||
+      !booking.dateId ||
+      !booking.time
+    )
+      return;
     setStatus("submitting");
     setSubmitError(null);
     try {
@@ -177,7 +205,9 @@ export function BookingPage() {
       setStep(2);
     } catch {
       setStatus("idle");
-      setSubmitError("Janji temu belum tersimpan karena gangguan koneksi. Coba lagi sebentar.");
+      setSubmitError(
+        "Janji temu belum tersimpan karena gangguan koneksi. Coba lagi sebentar.",
+      );
     }
   }
 
@@ -216,16 +246,22 @@ export function BookingPage() {
           : true;
 
   let hint = "";
-  if (step === 0 && !booking.serviceId) hint = "Pilih satu layanan untuk lanjut.";
+  if (step === 0 && !booking.serviceId)
+    hint = "Pilih satu layanan untuk lanjut.";
   if (step === 1 && !booking.doctorId) hint = "Pilih dokter untuk lanjut.";
-  if (step === 2 && !booking.dateId) hint = "Pilih tanggal dan jam untuk lanjut.";
-  if (step === 2 && booking.dateId && !booking.time) hint = "Pilih jam untuk lanjut.";
+  if (step === 2 && !booking.dateId)
+    hint = "Pilih tanggal dan jam untuk lanjut.";
+  if (step === 2 && booking.dateId && !booking.time)
+    hint = "Pilih jam untuk lanjut.";
 
   return (
     <div className="min-h-svh bg-background">
       <BookingHero showIntro={!isDone} />
 
-      <main id="main-content" className="relative z-10 -mt-16 px-3 pb-10 md:px-8 md:pb-16">
+      <main
+        id="main-content"
+        className="relative z-10 -mt-16 px-3 pb-10 md:px-8 md:pb-16"
+      >
         {isDone ? (
           <BookingSuccess
             code={code}
@@ -238,7 +274,10 @@ export function BookingPage() {
           <div className="mx-auto grid max-w-[640px] gap-6 lg:max-w-[1040px] lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
             <section
               aria-label="Formulir booking"
-              className={cn("grid min-w-0 gap-6 rounded-xl border bg-card px-4 pt-5 md:p-8", cardShadow)}
+              className={cn(
+                "grid min-w-0 gap-6 rounded-xl border bg-card px-4 pt-5 md:p-8",
+                cardShadow,
+              )}
             >
               <Stepper
                 current={step}
@@ -285,7 +324,9 @@ export function BookingPage() {
                   nameError={touched.name ? nameProblem : ""}
                   phoneError={touched.phone ? phoneProblem : ""}
                   onName={(name) => setBooking((prev) => ({ ...prev, name }))}
-                  onPhone={(phone) => setBooking((prev) => ({ ...prev, phone }))}
+                  onPhone={(phone) =>
+                    setBooking((prev) => ({ ...prev, phone }))
+                  }
                   onBlurName={() => setTouched((t) => ({ ...t, name: true }))}
                   onBlurPhone={() => setTouched((t) => ({ ...t, phone: true }))}
                   nameRef={nameRef}
@@ -312,13 +353,27 @@ export function BookingPage() {
               />
             </section>
 
-            <aside aria-label="Ringkasan janji" className="hidden lg:sticky lg:top-6 lg:block">
-              <div className={cn("grid gap-2 rounded-xl border bg-card p-5", cardShadow)}>
+            <aside
+              aria-label="Ringkasan janji"
+              className="hidden lg:sticky lg:top-6 lg:block"
+            >
+              <div
+                className={cn(
+                  "grid gap-2 rounded-xl border bg-card p-5",
+                  cardShadow,
+                )}
+              >
                 <h2 className="text-base font-bold">Ringkasan janji</h2>
                 <SummaryList rows={summary} />
                 <p className="flex gap-2 rounded-md bg-primary-50 p-3 text-xs text-muted-foreground">
-                  <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                  <span>Jam yang tampil hanya jam yang masih kosong, jadi tidak akan bentrok.</span>
+                  <ShieldCheck
+                    className="mt-0.5 size-3.5 shrink-0 text-primary"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    Jam yang tampil hanya jam yang masih kosong, jadi tidak akan
+                    bentrok.
+                  </span>
                 </p>
               </div>
             </aside>
@@ -335,8 +390,12 @@ function BookingHero({ showIntro }: { showIntro: boolean }) {
       <div className="mx-auto grid max-w-[640px] gap-8 lg:max-w-[1040px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-baseline gap-2">
-            <p className="text-lg font-bold tracking-tight">{siteConfig.name}</p>
-            <p className="text-sm text-on-brand-deep-muted">Booking janji temu</p>
+            <p className="text-lg font-bold tracking-tight">
+              {siteConfig.name}
+            </p>
+            <p className="text-sm text-on-brand-deep-muted">
+              Booking janji temu
+            </p>
           </div>
           <Link
             to="/sign-in"
@@ -352,14 +411,19 @@ function BookingHero({ showIntro }: { showIntro: boolean }) {
               Buat janji temu dalam 2 menit
             </h1>
             <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-              {["Tanpa daftar akun", "Hanya jam yang masih kosong", "Pengingat jadwal ke WhatsApp"].map(
-                (item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <CircleCheck className="size-4 text-on-brand-deep-muted" aria-hidden="true" />
-                    <span>{item}</span>
-                  </li>
-                ),
-              )}
+              {[
+                "Tanpa daftar akun",
+                "Hanya jam yang masih kosong",
+                "Pengingat jadwal ke WhatsApp",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <CircleCheck
+                    className="size-4 text-on-brand-deep-muted"
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
         ) : null}
@@ -417,8 +481,10 @@ function Stepper({
                   aria-hidden="true"
                   className={cn(
                     "relative z-10 inline-flex size-8 items-center justify-center rounded-full text-sm font-bold",
-                    state === "todo" && "bg-card text-muted-foreground ring-2 ring-border-strong ring-inset",
-                    state === "current" && "bg-primary text-primary-foreground ring-4 ring-primary-soft",
+                    state === "todo" &&
+                      "bg-card text-muted-foreground ring-2 ring-border-strong ring-inset",
+                    state === "current" &&
+                      "bg-primary text-primary-foreground ring-4 ring-primary-soft",
                   )}
                 >
                   {i + 1}
@@ -426,7 +492,9 @@ function Stepper({
                 <span
                   className={cn(
                     "text-center text-xs leading-tight",
-                    state === "current" ? "font-bold text-foreground" : "font-medium text-muted-foreground",
+                    state === "current"
+                      ? "font-bold text-foreground"
+                      : "font-medium text-muted-foreground",
                   )}
                 >
                   {s.label}
@@ -458,12 +526,19 @@ function WizardActions({
   const isLast = step === STEPS.length - 1;
   return (
     <div className="sticky bottom-0 z-10 -mx-4 grid gap-2 rounded-b-xl border-t bg-card px-4 py-3 shadow-[0_-8px_24px_rgb(27_36_33/0.08)] md:static md:mx-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:rounded-none md:px-0 md:pt-5 md:pb-0 md:shadow-none">
-      <p aria-live="polite" className="text-sm text-muted-foreground empty:hidden">
+      <p
+        aria-live="polite"
+        className="text-sm text-muted-foreground empty:hidden"
+      >
         {hint}
       </p>
       <div className="flex gap-3 md:col-start-2">
         {step > 0 ? (
-          <WizardButton variant="secondary" onClick={onBack} disabled={submitting}>
+          <WizardButton
+            variant="secondary"
+            onClick={onBack}
+            disabled={submitting}
+          >
             <ArrowLeft aria-hidden="true" />
             Kembali
           </WizardButton>
@@ -477,7 +552,10 @@ function WizardActions({
             className={submitting ? "cursor-progress" : undefined}
           >
             {submitting ? (
-              <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              <LoaderCircle
+                className="animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
             ) : (
               <CalendarCheck aria-hidden="true" />
             )}

@@ -6,7 +6,10 @@ const inputClass =
 
 function FieldError({ id, children }: { id: string; children: string }) {
   return (
-    <p id={id} className="flex items-center gap-2 text-sm font-medium text-destructive">
+    <p
+      id={id}
+      className="flex items-center gap-2 text-sm font-medium text-destructive"
+    >
       <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
       {children}
     </p>
@@ -69,7 +72,9 @@ export function StepPatient({
             className={inputClass}
           />
         </div>
-        {nameError ? <FieldError id="booking-nama-error">{nameError}</FieldError> : null}
+        {nameError ? (
+          <FieldError id="booking-nama-error">{nameError}</FieldError>
+        ) : null}
       </div>
 
       <div className="grid gap-2">
@@ -93,7 +98,9 @@ export function StepPatient({
             onBlur={onBlurPhone}
             aria-invalid={phoneError ? true : undefined}
             aria-describedby={
-              phoneError ? "booking-hp-help booking-hp-error" : "booking-hp-help"
+              phoneError
+                ? "booking-hp-help booking-hp-error"
+                : "booking-hp-help"
             }
             className={inputClass}
           />
@@ -101,7 +108,9 @@ export function StepPatient({
         <p id="booking-hp-help" className="text-sm text-muted-foreground">
           Dipakai klinik untuk mengirim pengingat jadwal.
         </p>
-        {phoneError ? <FieldError id="booking-hp-error">{phoneError}</FieldError> : null}
+        {phoneError ? (
+          <FieldError id="booking-hp-error">{phoneError}</FieldError>
+        ) : null}
       </div>
     </div>
   );

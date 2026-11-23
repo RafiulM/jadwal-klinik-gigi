@@ -23,7 +23,8 @@ export function ChoiceCard({
       className={cn(
         "group flex cursor-pointer items-center gap-4 rounded-md border bg-card p-4 transition-[border-color,background-color,box-shadow] hover:border-primary hover:shadow-[0_4px_12px_rgb(27_36_33/0.06)]",
         "has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-primary",
-        checked && "border-primary bg-primary-50 shadow-[inset_0_0_0_1px_var(--color-primary)]",
+        checked &&
+          "border-primary bg-primary-50 shadow-[inset_0_0_0_1px_var(--color-primary)]",
       )}
     >
       <input
