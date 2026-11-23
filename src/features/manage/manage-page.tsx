@@ -1,17 +1,28 @@
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Clock, Stethoscope, UserRound, type LucideIcon } from "lucide-react";
+import {
+  Clock,
+  Plus,
+  Stethoscope,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
+import { messageOf } from "@/lib/api-client";
+import { useLoad } from "@/lib/use-load";
+import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
+import { manageApi } from "./api";
+import { FormDialog } from "./form-dialog";
+import { ServiceForm, type ServiceInput } from "./service-form";
 import { cn } from "@/lib/utils";
 import { DoctorsPanel } from "./doctors-panel";
 import { WeekHours } from "./hours-panel";
 import {
   MOCK_DOCTORS,
   MOCK_SCHEDULES,
-  MOCK_SERVICES,
   type AdminDoctor,
   type AdminService,
 } from "./mock-data";
 import { ServicesPanel } from "./services-panel";
-import { SelectField, card } from "./ui";
+import { EditButton, SelectField, Switch, card } from "./ui";
 
 type TabId = "layanan" | "dokter" | "jam";
 
@@ -22,7 +33,31 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
 ];
 
 export function ManagePage() {
-  const [services] = useState<AdminService[]>(MOCK_SERVICES);
+  const [load, reload] = useLoad("services", () => manageApi.services());
+  if (load.state === "ready") return <ManageView initialServices={load.data} />;
+  return (
+    <div className="grid gap-4 px-4 pt-5 pb-10 md:p-8 lg:px-10">
+      <h1 className="text-2xl font-bold tracking-tight">Kelola klinik</h1>
+      {load.state === "error" ? (
+        <ErrorNote message={load.message} onRetry={reload} />
+      ) : (
+        <LoadingNote>Memuat data klinik…</LoadingNote>
+      )}
+    </div>
+  );
+}
+
+type Editing = { type: "layanan"; item: AdminService | null } | null;
+
+function ManageView({ initialServices }: { initialServices: AdminService[] }) {
+  const [services, setServices] = useState<AdminService[]>(initialServices);
+  const [editing, setEditing] = useState<Editing>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [toggling, setToggling] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const [doctors] = useState<AdminDoctor[]>(MOCK_DOCTORS);
   const [tab, setTab] = useState<TabId>("layanan");
   const [scheduleDoctor, setScheduleDoctor] = useState(MOCK_DOCTORS[0].id);
@@ -53,6 +88,64 @@ export function ManagePage() {
   }
 
   const schedule = MOCK_SCHEDULES[scheduleDoctor];
+
+  function announce(text: string) {
+    setError("");
+    setMessage(text);
+  }
+
+  function openEditor(next: NonNullable<Editing>) {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    setFormError("");
+    setEditing(next);
+  }
+
+  function closeEditor() {
+    setEditing(null);
+    returnFocusRef.current?.focus();
+  }
+
+  async function saveService(input: ServiceInput) {
+    const current = editing?.type === "layanan" ? editing.item : null;
+    setSaving(true);
+    setFormError("");
+    try {
+      const saved = current
+        ? await manageApi.updateService(current.id, input)
+        : await manageApi.createService(input);
+      setServices((prev) =>
+        current
+          ? prev.map((s) => (s.id === saved.id ? saved : s))
+          : [...prev, saved],
+      );
+      announce(
+        current
+          ? `Layanan ${saved.name} diperbarui.`
+          : `Layanan ${saved.name} ditambahkan dan tampil di booking.`,
+      );
+      closeEditor();
+    } catch (failure) {
+      setFormError(messageOf(failure));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleService(service: AdminService, isActive: boolean) {
+    setToggling(service.id);
+    try {
+      const saved = await manageApi.updateService(service.id, { isActive });
+      setServices((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
+      announce(
+        `${saved.name} ${isActive ? "kembali tampil di booking." : "disembunyikan dari booking."}`,
+      );
+    } catch (failure) {
+      setMessage("");
+      setError(messageOf(failure));
+    } finally {
+      setToggling(null);
+    }
+  }
 
   return (
     <div className="px-4 pt-5 pb-10 md:p-8 lg:px-10">
@@ -87,7 +180,10 @@ export function ManagePage() {
             aria-selected={tab === t.id}
             aria-controls={`panel-${t.id}`}
             tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              setMessage("");
+            }}
             className={cn(
               "inline-flex min-h-10 items-center gap-2 rounded-sm px-4 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
               tab === t.id
@@ -113,12 +209,57 @@ export function ManagePage() {
         ))}
       </div>
 
+      <p
+        role="status"
+        className="mb-5 rounded-md bg-success-soft px-4 py-3 text-sm font-medium text-success empty:hidden"
+      >
+        {message}
+      </p>
+      {error ? (
+        <p
+          role="alert"
+          className="mb-5 rounded-md bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+        >
+          {error}
+        </p>
+      ) : null}
+
       <section
         role="tabpanel"
         id={`panel-${tab}`}
         aria-labelledby={`tab-${tab}`}
       >
-        {tab === "layanan" ? <ServicesPanel services={services} /> : null}
+        {tab === "layanan" ? (
+          <ServicesPanel
+            services={services}
+            actions={
+              <button
+                type="button"
+                onClick={() => openEditor({ type: "layanan", item: null })}
+                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Tambah layanan
+              </button>
+            }
+            renderToggle={(s) => (
+              <Switch
+                label={`Tampil di booking: ${s.name}`}
+                checked={s.isActive}
+                disabled={toggling === s.id}
+                onChange={(on) => toggleService(s, on)}
+              >
+                {s.isActive ? "Tampil" : "Disembunyikan"}
+              </Switch>
+            )}
+            renderEdit={(s) => (
+              <EditButton
+                label={`Ubah ${s.name}`}
+                onClick={() => openEditor({ type: "layanan", item: s })}
+              />
+            )}
+          />
+        ) : null}
         {tab === "dokter" ? (
           <DoctorsPanel doctors={doctors} services={services} />
         ) : null}
@@ -142,6 +283,22 @@ export function ManagePage() {
           </div>
         ) : null}
       </section>
+
+      <FormDialog
+        open={editing !== null}
+        titleId="layanan-title"
+        onClose={closeEditor}
+      >
+        {editing?.type === "layanan" ? (
+          <ServiceForm
+            initial={editing.item}
+            saving={saving}
+            error={formError}
+            onCancel={closeEditor}
+            onSave={saveService}
+          />
+        ) : null}
+      </FormDialog>
     </div>
   );
 }
