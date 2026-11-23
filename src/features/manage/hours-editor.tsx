@@ -6,7 +6,7 @@ import { useLoad } from "@/lib/use-load";
 import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
 import { manageApi, type AdminDoctor, type DoctorWeekSchedule } from "./api";
 import { DAY_NAMES, WeekHours, dayError, slotCount } from "./hours-panel";
-import type { ScheduleDay } from "./mock-data";
+import type { ScheduleDay } from "./types";
 import { SelectField, card, control } from "./ui";
 
 const INTERVALS = [15, 20, 30, 45, 60];
@@ -83,7 +83,10 @@ export function HoursEditor({
     setSaving(true);
     setError("");
     try {
-      const result = await manageApi.saveSchedule(doctorId, schedule);
+      const { outsideHours = 0, ...result } = await manageApi.saveSchedule(
+        doctorId,
+        schedule,
+      );
       setSaved((prev) => ({ ...prev, [doctorId]: result }));
       setDrafts((prev) => {
         const next = { ...prev };
@@ -91,7 +94,11 @@ export function HoursEditor({
         return next;
       });
       onSaved(
-        `Jam praktik ${doctor?.name ?? "dokter"} disimpan. Halaman booking memakai jadwal baru.`,
+        `Jam praktik ${doctor?.name ?? "dokter"} disimpan. Halaman booking memakai jadwal baru.${
+          outsideHours
+            ? ` Perhatian: ${outsideHours} janji mendatang kini di luar jam praktik — cek di Papan jadwal dan hubungi pasiennya.`
+            : ""
+        }`,
       );
     } catch (failure) {
       setError(messageOf(failure));

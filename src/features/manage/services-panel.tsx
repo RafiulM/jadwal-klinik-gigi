@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { AdminService } from "./mock-data";
+import type { AdminService } from "./types";
 import {
   Cell,
   EmptyFiltered,

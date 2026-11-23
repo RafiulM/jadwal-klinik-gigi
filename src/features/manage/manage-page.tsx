@@ -16,7 +16,7 @@ import { ServiceForm, type ServiceInput } from "./service-form";
 import { DoctorForm, type DoctorInput } from "./doctor-form";
 import { cn } from "@/lib/utils";
 import { DoctorsPanel } from "./doctors-panel";
-import type { AdminDoctor, AdminService } from "./mock-data";
+import type { AdminDoctor, AdminService } from "./types";
 import { HoursEditor } from "./hours-editor";
 import { BookingPreview } from "./booking-preview";
 import { ServicesPanel } from "./services-panel";

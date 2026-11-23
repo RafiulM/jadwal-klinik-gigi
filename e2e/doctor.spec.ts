@@ -75,7 +75,18 @@ test.beforeAll(async () => {
   ids.todayB = await insert("JK-DKB001", ids.doctorB, clinicDate(0));
 });
 
+// Satu akun untuk seluruh file (batas laju pendaftaran Better Auth).
+test.describe.configure({ mode: "serial" });
+let client: APIRequestContext;
+let email = "";
+
+test.beforeAll(async ({ playwright }) => {
+  client = await playwright.request.newContext({ baseURL: origin });
+  email = await signUp(client);
+});
+
 test.afterAll(async () => {
+  await client.dispose();
   await pool.end();
 });
 
@@ -106,10 +117,8 @@ async function linkDoctor(email: string, doctorId: string) {
   expect(rowCount).toBe(1);
 }
 
-test("dokter hanya melihat dan mengubah janji temunya sendiri", async ({
-  request,
-}) => {
-  const email = await signUp(request);
+test("dokter hanya melihat dan mengubah janji temunya sendiri", async () => {
+  const request = client;
 
   const before = await request.get("/api/doctor/today");
   expect(before.status()).toBe(403);
@@ -152,14 +161,8 @@ test("dokter hanya melihat dan mengubah janji temunya sendiri", async ({
   expect(foreign.status()).toBe(403);
 });
 
-test("tandai selesai dengan kontrol, lalu booking kontrol mengubah statusnya", async ({
-  request,
-}) => {
-  const email = await signUp(request);
-  await pool.query("UPDATE doctors SET user_id = NULL WHERE id = $1", [
-    ids.doctorA,
-  ]);
-  await linkDoctor(email, ids.doctorA);
+test("tandai selesai dengan kontrol, lalu booking kontrol mengubah statusnya", async () => {
+  const request = client;
 
   const dueDate = clinicDate(30);
   const done = await request.patch(`/api/doctor/appointments/${ids.todayA}`, {

@@ -1,7 +1,7 @@
 import { Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { displayTime } from "@/features/booking/format";
-import type { DoctorWeekSchedule, ScheduleDay } from "./mock-data";
+import type { DoctorWeekSchedule, ScheduleDay } from "./types";
 import { card } from "./ui";
 
 export const DAY_NAMES = [

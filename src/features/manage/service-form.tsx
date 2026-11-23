@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { DialogForm, Field, describedBy } from "./form-dialog";
-import type { AdminService } from "./mock-data";
+import type { AdminService } from "./types";
 import { control } from "./ui";
 
 export type ServiceInput = Omit<AdminService, "id" | "isActive">;

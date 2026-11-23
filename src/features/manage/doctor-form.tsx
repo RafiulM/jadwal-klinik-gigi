@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CircleAlert } from "lucide-react";
 import { DialogForm, Field, describedBy } from "./form-dialog";
-import type { AdminDoctor, AdminService } from "./mock-data";
+import type { AdminDoctor, AdminService } from "./types";
 import { control } from "./ui";
 
 export type DoctorInput = Omit<AdminDoctor, "id" | "isActive">;

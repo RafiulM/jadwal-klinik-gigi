@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { CircleAlert, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doctorInitials } from "@/features/schedule/schedule-format";
-import type { AdminDoctor, AdminService } from "./mock-data";
+import type { AdminDoctor, AdminService } from "./types";
 import {
   Cell,
   EmptyFiltered,
