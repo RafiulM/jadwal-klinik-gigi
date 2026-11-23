@@ -32,4 +32,18 @@ export type DailyReport = {
   days: DayRecap[];
   /** Semua dokter aktif, untuk menyebut siapa yang tidak praktik. */
   doctors: { id: string; name: string }[];
+  /** Agregasi per dokter untuk seluruh rentang `days`. */
+  period: PeriodDoctor[];
+};
+
+export type PeriodDoctor = {
+  id: string;
+  name: string;
+  /** Hari yang punya janji temu untuk dokter ini. */
+  days: number;
+  /** Pasien unik (pasien yang datang dua kali dihitung sekali). */
+  patients: number;
+  total: number;
+  completed: number;
+  noShow: number;
 };

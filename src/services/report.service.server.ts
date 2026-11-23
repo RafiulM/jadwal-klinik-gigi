@@ -45,6 +45,42 @@ export async function countVisitsByDayAny(from: string, to: string) {
   return rows;
 }
 
+/**
+ * Jumlah pasien per dokter dalam rentang tanggal: hari praktik (hari yang ada
+ * janji), janji per status, dan pasien unik (satu pasien yang datang dua kali
+ * dihitung sekali). Urut dari pasien selesai terbanyak.
+ */
+export async function countPatientsByDoctorAny(from: string, to: string) {
+  return db
+    .select({
+      id: doctors.id,
+      name: doctors.name,
+      days: sql<number>`count(distinct ${appointments.appointmentDate})`.mapWith(
+        Number,
+      ),
+      patients: sql<number>`count(distinct ${appointments.patientId})`.mapWith(
+        Number,
+      ),
+      total: count(),
+      completed:
+        sql<number>`count(*) filter (where ${appointments.status} = 'completed')`.mapWith(
+          Number,
+        ),
+      noShow:
+        sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`.mapWith(
+          Number,
+        ),
+    })
+    .from(appointments)
+    .innerJoin(doctors, eq(doctors.id, appointments.doctorId))
+    .where(between(appointments.appointmentDate, from, to))
+    .groupBy(doctors.id, doctors.name)
+    .orderBy(
+      sql`count(*) filter (where ${appointments.status} = 'completed') desc`,
+      asc(doctors.name),
+    );
+}
+
 function sum(rows: Counts[]): Counts {
   return rows.reduce(
     (acc, r) => ({
@@ -70,8 +106,9 @@ export async function getDailyReportAny(input: {
   const date = input.date && input.date < today ? input.date : today;
   const from = addDays(date, -(input.days - 1));
 
-  const [visits, schedules] = await Promise.all([
+  const [visits, period, schedules] = await Promise.all([
     countVisitsByDayAny(from, date),
+    countPatientsByDoctorAny(from, date),
     db
       .selectDistinct({
         doctorId: doctorSchedules.doctorId,
@@ -122,7 +159,7 @@ export async function getDailyReportAny(input: {
     };
   });
 
-  return { today, date, days, doctors: doctorList };
+  return { today, date, days, doctors: doctorList, period };
 }
 
 export type DailyReport = Awaited<ReturnType<typeof getDailyReportAny>>;

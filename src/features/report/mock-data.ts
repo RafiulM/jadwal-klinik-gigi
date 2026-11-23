@@ -62,12 +62,24 @@ function recap(date: string): DayRecap {
 export const MOCK_TODAY = "2026-11-23";
 
 export function getMockReport(date: string, days = 8): DailyReport {
-  return {
-    today: MOCK_TODAY,
-    date,
-    days: Array.from({ length: days }, (_, i) =>
-      recap(addDays(date, i - days + 1)),
-    ),
-    doctors: DOCTORS,
-  };
+  const window = Array.from({ length: days }, (_, i) =>
+    recap(addDays(date, i - days + 1)),
+  );
+  const period = DOCTORS.map((d) => {
+    const rows = window.flatMap((day) =>
+      day.doctors.filter((r) => r.id === d.id),
+    );
+    const total = rows.reduce((s, r) => s + r.total, 0);
+    return {
+      ...d,
+      days: rows.length,
+      patients: Math.max(0, total - 1),
+      total,
+      completed: rows.reduce((s, r) => s + r.completed, 0),
+      noShow: rows.reduce((s, r) => s + r.noShow, 0),
+    };
+  })
+    .filter((d) => d.total > 0)
+    .sort((a, b) => b.completed - a.completed);
+  return { today: MOCK_TODAY, date, days: window, doctors: DOCTORS, period };
 }

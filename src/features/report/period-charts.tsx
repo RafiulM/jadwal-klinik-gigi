@@ -12,7 +12,7 @@ import {
   SearchField,
   SelectField,
 } from "@/features/manage/ui";
-import type { DailyReport } from "./api";
+import type { DailyReport, PeriodDoctor } from "./types";
 import { card, percent } from "./format";
 
 /** Batas atas sumbu yang "rapi" (kelipatan langkah) dan garis bantunya. */
@@ -171,15 +171,6 @@ export function TrendColumns({
   );
 }
 
-type PeriodRow = {
-  id: string;
-  name: string;
-  days: number;
-  total: number;
-  completed: number;
-  noShow: number;
-};
-
 /**
  * Jumlah pasien per dokter selama jendela 8 hari: batang horizontal pasien
  * selesai (skala bersama) plus daftar angka lengkap yang bisa disaring.
@@ -189,32 +180,20 @@ export function DoctorPeriod({ report }: { report: DailyReport }) {
   const [sort, setSort] = useState("selesai");
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const byDoctor = new Map<string, PeriodRow>();
-  for (const doctor of report.doctors)
-    byDoctor.set(doctor.id, {
-      ...doctor,
-      days: 0,
-      total: 0,
-      completed: 0,
-      noShow: 0,
-    });
-  for (const day of report.days)
-    for (const r of day.doctors) {
-      const row = byDoctor.get(r.id) ?? {
-        id: r.id,
-        name: r.name,
+  // Agregasi dari server, ditambah dokter aktif yang tidak punya janji.
+  const all: PeriodDoctor[] = [
+    ...report.period,
+    ...report.doctors
+      .filter((d) => !report.period.some((p) => p.id === d.id))
+      .map((d) => ({
+        ...d,
         days: 0,
+        patients: 0,
         total: 0,
         completed: 0,
         noShow: 0,
-      };
-      row.days += 1;
-      row.total += r.total;
-      row.completed += r.completed;
-      row.noShow += r.noShow;
-      byDoctor.set(r.id, row);
-    }
-  const all = [...byDoctor.values()];
+      })),
+  ];
   const max = Math.max(1, ...all.map((r) => r.completed));
   const q = query.trim().toLowerCase();
   const rows = all
@@ -291,8 +270,9 @@ export function DoctorPeriod({ report }: { report: DailyReport }) {
                 <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                   <span className="font-semibold break-words">{r.name}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {r.days} hari praktik · {r.total} janji · {r.noShow} tidak
-                    datang · {percent(r.completed, r.total)} selesai
+                    {r.days} hari praktik · {r.patients} pasien · {r.total}{" "}
+                    janji · {r.noShow} tidak datang ·{" "}
+                    {percent(r.completed, r.total)} selesai
                   </span>
                 </div>
                 <div
