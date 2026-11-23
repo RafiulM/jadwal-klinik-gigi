@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import { maskPhone } from "@/lib/phone";
+import { uniqueViolation } from "@/lib/db-errors.server";
 import {
   addDays,
   clinicNow,
@@ -241,18 +242,6 @@ function newBookingCode() {
   for (let i = 0; i < 6; i++)
     code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
   return code;
-}
-
-function uniqueViolation(error: unknown): string | null {
-  for (
-    let e: unknown = error;
-    e && typeof e === "object";
-    e = (e as { cause?: unknown }).cause
-  ) {
-    const pg = e as { code?: string; constraint?: string };
-    if (pg.code === "23505") return pg.constraint ?? "";
-  }
-  return null;
 }
 
 // Satu transaksi: cek ulang layanan/dokter/slot, simpan pasien (berdasarkan
