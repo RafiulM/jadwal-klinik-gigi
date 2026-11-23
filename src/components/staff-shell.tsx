@@ -8,6 +8,7 @@ import {
 import {
   CalendarCheck,
   CalendarClock,
+  CalendarRange,
   LogOut,
   Menu,
   X,
@@ -24,6 +25,7 @@ export type StaffNavItem = { to: string; label: string; icon: LucideIcon };
 export const STAFF_NAV: StaffNavItem[] = [
   { to: "/dokter", label: "Jadwal hari ini", icon: CalendarCheck },
   { to: "/kontrol", label: "Kontrol pasien", icon: CalendarClock },
+  { to: "/jadwal", label: "Papan jadwal", icon: CalendarRange },
 ];
 
 function initialsOf(name: string) {
