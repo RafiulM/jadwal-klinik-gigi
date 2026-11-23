@@ -1,6 +1,9 @@
 // Klien browser untuk API Kelola klinik (khusus admin).
 //   GET   /api/admin/services        POST /api/admin/services
 //   PATCH /api/admin/services/:id    (nama, keterangan, durasi, kontrol, isActive)
+//   GET   /api/admin/doctors         POST /api/admin/doctors
+//   PATCH /api/admin/doctors/:id     (data dokter, layanan, akun, isActive)
+//   GET   /api/admin/doctors/:id/schedule
 import { apiRequest, apiSend } from "@/lib/api-client";
 import {
   MOCK_DOCTORS,
@@ -19,6 +22,7 @@ export type {
 } from "./mock-data";
 
 export type ServicePatch = Partial<Omit<AdminService, "id">>;
+export type DoctorPatch = Partial<Omit<AdminDoctor, "id">>;
 
 const http = {
   services: () => apiRequest<AdminService[]>("/api/admin/services"),
@@ -31,6 +35,14 @@ const http = {
       patch,
     ),
   doctors: () => apiRequest<AdminDoctor[]>("/api/admin/doctors"),
+  createDoctor: (input: Omit<AdminDoctor, "id" | "isActive">) =>
+    apiSend<AdminDoctor>("/api/admin/doctors", "POST", input),
+  updateDoctor: (id: string, patch: DoctorPatch) =>
+    apiSend<AdminDoctor>(
+      `/api/admin/doctors/${encodeURIComponent(id)}`,
+      "PATCH",
+      patch,
+    ),
   schedule: (doctorId: string) =>
     apiRequest<DoctorWeekSchedule>(
       `/api/admin/doctors/${encodeURIComponent(doctorId)}/schedule`,
@@ -67,6 +79,30 @@ const mock: typeof http = {
   doctors: async () => {
     await wait(200);
     return structuredClone(store.doctors);
+  },
+  createDoctor: async (input) => {
+    await wait();
+    const doctor = { ...input, id: crypto.randomUUID(), isActive: true };
+    store.doctors.push(doctor);
+    // Dokter baru belum punya jam praktik: semua hari libur.
+    store.schedules[doctor.id] = {
+      doctorId: doctor.id,
+      slotIntervalMinutes: 30,
+      days: [1, 2, 3, 4, 5, 6, 0].map((dayOfWeek) => ({
+        dayOfWeek,
+        open: false,
+        start: "09:00",
+        end: "15:00",
+      })),
+    };
+    return structuredClone(doctor);
+  },
+  updateDoctor: async (id, patch) => {
+    await wait();
+    const index = store.doctors.findIndex((d) => d.id === id);
+    if (index < 0) throw new Error("Dokter tidak ditemukan.");
+    store.doctors[index] = { ...store.doctors[index], ...patch };
+    return structuredClone(store.doctors[index]);
   },
   schedule: async (doctorId) => {
     await wait(200);

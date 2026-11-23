@@ -233,7 +233,7 @@ function FollowUpView({
       </p>
 
       {rows.length ? (
-        <div className={cn(card, "relative overflow-hidden")}>
+        <div className={cn(card, "relative overflow-x-auto")}>
           <table className="w-full border-collapse text-sm">
             <thead className="hidden bg-muted text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-header-group">
               <tr>

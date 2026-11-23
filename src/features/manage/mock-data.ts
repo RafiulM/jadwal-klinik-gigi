@@ -21,6 +21,8 @@ export type AdminDoctor = {
   phone: string;
   isActive: boolean;
   serviceIds: string[];
+  /** Email akun login yang ditautkan ke dokter ini; null bila belum ada. */
+  accountEmail: string | null;
 };
 
 export type ScheduleDay = {
@@ -79,6 +81,7 @@ export const MOCK_DOCTORS: AdminDoctor[] = [
     specialization: "Dokter gigi umum",
     phone: "081200002001",
     isActive: true,
+    accountEmail: "dokter.uji@klinik.test",
     serviceIds: ["scaling", "tambal", "periksa"],
   },
   {
@@ -87,6 +90,7 @@ export const MOCK_DOCTORS: AdminDoctor[] = [
     specialization: "Spesialis ortodonti (behel)",
     phone: "081200002002",
     isActive: true,
+    accountEmail: null,
     serviceIds: ["behel", "periksa"],
   },
   {
@@ -95,6 +99,7 @@ export const MOCK_DOCTORS: AdminDoctor[] = [
     specialization: "Dokter gigi umum",
     phone: "081200002003",
     isActive: true,
+    accountEmail: null,
     serviceIds: ["scaling", "tambal", "periksa"],
   },
 ];

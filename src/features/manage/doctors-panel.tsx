@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { CircleAlert, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doctorInitials } from "@/features/schedule/schedule-format";
 import type { AdminDoctor, AdminService } from "./mock-data";
@@ -100,7 +101,7 @@ export function DoctorsPanel({
       </div>
 
       {visible.length ? (
-        <div className={cn(card, "overflow-hidden")}>
+        <div className={cn(card, "overflow-x-auto")}>
           <table className="block w-full border-collapse text-sm md:table">
             <thead className="hidden bg-muted text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-header-group">
               <tr>
@@ -139,6 +140,26 @@ export function DoctorsPanel({
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {d.specialization || "Bidang belum diisi"}
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 text-xs",
+                            d.accountEmail
+                              ? "text-muted-foreground"
+                              : "font-medium text-warning",
+                          )}
+                        >
+                          {d.accountEmail ? (
+                            <KeyRound className="size-3" aria-hidden="true" />
+                          ) : (
+                            <CircleAlert
+                              className="size-3"
+                              aria-hidden="true"
+                            />
+                          )}
+                          {d.accountEmail
+                            ? `Akun: ${d.accountEmail}`
+                            : "Belum ada akun login"}
                         </span>
                       </span>
                     </span>

@@ -80,7 +80,7 @@ export function ServicesPanel({
       </div>
 
       {visible.length ? (
-        <div className={cn(card, "overflow-hidden")}>
+        <div className={cn(card, "overflow-x-auto")}>
           <table className="block w-full border-collapse text-sm md:table">
             <thead className="hidden bg-muted text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-header-group">
               <tr>

@@ -12,11 +12,11 @@ import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
 import { manageApi } from "./api";
 import { FormDialog } from "./form-dialog";
 import { ServiceForm, type ServiceInput } from "./service-form";
+import { DoctorForm, type DoctorInput } from "./doctor-form";
 import { cn } from "@/lib/utils";
 import { DoctorsPanel } from "./doctors-panel";
 import { WeekHours } from "./hours-panel";
 import {
-  MOCK_DOCTORS,
   MOCK_SCHEDULES,
   type AdminDoctor,
   type AdminService,
@@ -33,8 +33,16 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
 ];
 
 export function ManagePage() {
-  const [load, reload] = useLoad("services", () => manageApi.services());
-  if (load.state === "ready") return <ManageView initialServices={load.data} />;
+  const [load, reload] = useLoad("kelola", () =>
+    Promise.all([manageApi.services(), manageApi.doctors()]),
+  );
+  if (load.state === "ready")
+    return (
+      <ManageView
+        initialServices={load.data[0]}
+        initialDoctors={load.data[1]}
+      />
+    );
   return (
     <div className="grid gap-4 px-4 pt-5 pb-10 md:p-8 lg:px-10">
       <h1 className="text-2xl font-bold tracking-tight">Kelola klinik</h1>
@@ -47,10 +55,20 @@ export function ManagePage() {
   );
 }
 
-type Editing = { type: "layanan"; item: AdminService | null } | null;
+type Editing =
+  | { type: "layanan"; item: AdminService | null }
+  | { type: "dokter"; item: AdminDoctor | null }
+  | null;
 
-function ManageView({ initialServices }: { initialServices: AdminService[] }) {
+function ManageView({
+  initialServices,
+  initialDoctors,
+}: {
+  initialServices: AdminService[];
+  initialDoctors: AdminDoctor[];
+}) {
   const [services, setServices] = useState<AdminService[]>(initialServices);
+  const [doctors, setDoctors] = useState<AdminDoctor[]>(initialDoctors);
   const [editing, setEditing] = useState<Editing>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -58,9 +76,10 @@ function ManageView({ initialServices }: { initialServices: AdminService[] }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const [doctors] = useState<AdminDoctor[]>(MOCK_DOCTORS);
   const [tab, setTab] = useState<TabId>("layanan");
-  const [scheduleDoctor, setScheduleDoctor] = useState(MOCK_DOCTORS[0].id);
+  const [scheduleDoctor, setScheduleDoctor] = useState(
+    initialDoctors[0]?.id ?? "",
+  );
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const counts: Record<TabId, number | null> = {
     layanan: services.length,
@@ -128,6 +147,48 @@ function ManageView({ initialServices }: { initialServices: AdminService[] }) {
       setFormError(messageOf(failure));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveDoctor(input: DoctorInput) {
+    const current = editing?.type === "dokter" ? editing.item : null;
+    setSaving(true);
+    setFormError("");
+    try {
+      const saved = current
+        ? await manageApi.updateDoctor(current.id, input)
+        : await manageApi.createDoctor(input);
+      setDoctors((prev) =>
+        current
+          ? prev.map((d) => (d.id === saved.id ? saved : d))
+          : [...prev, saved],
+      );
+      announce(
+        current
+          ? `Data ${saved.name} diperbarui.`
+          : `${saved.name} ditambahkan. Atur jam praktiknya agar muncul di booking.`,
+      );
+      closeEditor();
+    } catch (failure) {
+      setFormError(messageOf(failure));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleDoctor(doctor: AdminDoctor, isActive: boolean) {
+    setToggling(doctor.id);
+    try {
+      const saved = await manageApi.updateDoctor(doctor.id, { isActive });
+      setDoctors((prev) => prev.map((d) => (d.id === saved.id ? saved : d)));
+      announce(
+        `${saved.name} ${isActive ? "kembali menerima booking." : "tidak menerima booking baru."}`,
+      );
+    } catch (failure) {
+      setMessage("");
+      setError(messageOf(failure));
+    } finally {
+      setToggling(null);
     }
   }
 
@@ -261,7 +322,36 @@ function ManageView({ initialServices }: { initialServices: AdminService[] }) {
           />
         ) : null}
         {tab === "dokter" ? (
-          <DoctorsPanel doctors={doctors} services={services} />
+          <DoctorsPanel
+            doctors={doctors}
+            services={services}
+            actions={
+              <button
+                type="button"
+                onClick={() => openEditor({ type: "dokter", item: null })}
+                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Tambah dokter
+              </button>
+            }
+            renderToggle={(d) => (
+              <Switch
+                label={`Terima booking: ${d.name}`}
+                checked={d.isActive}
+                disabled={toggling === d.id}
+                onChange={(on) => toggleDoctor(d, on)}
+              >
+                {d.isActive ? "Menerima" : "Tidak menerima"}
+              </Switch>
+            )}
+            renderEdit={(d) => (
+              <EditButton
+                label={`Ubah ${d.name}`}
+                onClick={() => openEditor({ type: "dokter", item: d })}
+              />
+            )}
+          />
         ) : null}
         {tab === "jam" ? (
           <div className="grid gap-4">
@@ -286,7 +376,7 @@ function ManageView({ initialServices }: { initialServices: AdminService[] }) {
 
       <FormDialog
         open={editing !== null}
-        titleId="layanan-title"
+        titleId={editing?.type === "dokter" ? "dokter-title" : "layanan-title"}
         onClose={closeEditor}
       >
         {editing?.type === "layanan" ? (
@@ -296,6 +386,16 @@ function ManageView({ initialServices }: { initialServices: AdminService[] }) {
             error={formError}
             onCancel={closeEditor}
             onSave={saveService}
+          />
+        ) : null}
+        {editing?.type === "dokter" ? (
+          <DoctorForm
+            initial={editing.item}
+            services={services}
+            saving={saving}
+            error={formError}
+            onCancel={closeEditor}
+            onSave={saveDoctor}
           />
         ) : null}
       </FormDialog>
