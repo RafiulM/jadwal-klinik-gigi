@@ -1,14 +1,8 @@
 import { Clock, Repeat } from "lucide-react";
 import { ChoiceCard, Pill } from "./choice-card";
-import type { Service } from "./mock-data";
+import type { Service } from "./api";
+import { followUpText } from "./format";
 import { StepHeading } from "./step-heading";
-
-function followUpText(days: number | null) {
-  if (!days) return null;
-  if (days % 30 === 0 && days >= 30)
-    return days === 30 ? "Tiap bulan" : `Tiap ${days / 30} bulan`;
-  return `Tiap ${days} hari`;
-}
 
 export function StepService({
   services,

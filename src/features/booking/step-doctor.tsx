@@ -1,7 +1,7 @@
 import { Calendar, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChoiceCard, Pill } from "./choice-card";
-import type { Doctor } from "./mock-data";
+import type { DoctorView } from "./format";
 import { StepHeading } from "./step-heading";
 
 export function DoctorAvatar({
@@ -33,7 +33,7 @@ export function StepDoctor({
   onSelect,
   headingRef,
 }: {
-  doctors: Doctor[];
+  doctors: DoctorView[];
   serviceName: string | null;
   selectedId: string | null;
   onSelect: (id: string) => void;

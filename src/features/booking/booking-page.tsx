@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -16,20 +16,29 @@ import {
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import {
-  DATES,
-  DOCTORS,
-  SERVICES,
-  buildSlots,
-  dayInfo,
-  submitBookingMock,
-  takenFor,
-} from "./mock-data";
+  ApiFailure,
+  bookingApi,
+  type AvailabilityDay,
+  type BookingResult,
+  type Service,
+} from "./api";
+import {
+  DAY_SHORT,
+  dayNumber,
+  displayTime,
+  formatLongDate,
+  monthRangeLabel,
+  toDoctorView,
+  type DoctorView,
+} from "./format";
+import { ErrorNote, LoadingNote, type Load } from "./load-state";
 import { nameError, phoneError } from "./patient-validation";
 import { BookingSuccess } from "./booking-success";
 import { StepConfirm } from "./step-confirm";
 import { StepDoctor } from "./step-doctor";
+import { StepHeading } from "./step-heading";
 import { StepPatient } from "./step-patient";
-import { StepSchedule } from "./step-schedule";
+import { StepSchedule, type DayOption } from "./step-schedule";
 import { StepService } from "./step-service";
 import { SummaryList } from "./summary-list";
 
@@ -41,10 +50,10 @@ export const STEPS = [
   { id: "konfirmasi", label: "Konfirmasi" },
 ] as const;
 
-export type BookingState = {
+type BookingState = {
   serviceId: string | null;
   doctorId: string | null;
-  dateId: string | null;
+  date: string | null;
   time: string | null;
   name: string;
   phone: string;
@@ -53,54 +62,141 @@ export type BookingState = {
 const EMPTY: BookingState = {
   serviceId: null,
   doctorId: null,
-  dateId: null,
+  date: null,
   time: null,
   name: "",
   phone: "",
 };
 
-type SubmitStatus = "idle" | "submitting" | "done";
-
 const cardShadow =
   "shadow-[0_1px_2px_rgb(27_36_33/0.06),0_12px_32px_rgb(27_36_33/0.08)]";
+
+function messageOf(error: unknown) {
+  return error instanceof ApiFailure
+    ? error.message
+    : "Terjadi kesalahan. Coba lagi.";
+}
+
+/** Muat data dari API setiap kali `key` berubah; `reload` untuk tombol Coba lagi. */
+function useLoad<T>(key: string | null, load: (key: string) => Promise<T>) {
+  const [attempt, setAttempt] = useState(0);
+  const [settled, setSettled] = useState<{
+    token: string;
+    result: Load<T>;
+  } | null>(null);
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  });
+
+  useEffect(() => {
+    if (!key) return;
+    let active = true;
+    const token = `${key}#${attempt}`;
+    loadRef.current(key).then(
+      (data) => {
+        if (active) setSettled({ token, result: { state: "ready", data } });
+      },
+      (error) => {
+        if (active)
+          setSettled({
+            token,
+            result: { state: "error", message: messageOf(error) },
+          });
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [key, attempt]);
+
+  const reload = useCallback(() => setAttempt((n) => n + 1), []);
+  const token = key ? `${key}#${attempt}` : null;
+  // Belum ada hasil untuk permintaan terbaru berarti masih memuat.
+  const result: Load<T> = !token
+    ? { state: "idle" }
+    : settled?.token === token
+      ? settled.result
+      : { state: "loading" };
+  return [result, reload] as const;
+}
+
+function dayOption(day: AvailabilityDay): DayOption {
+  const free = day.slots.filter((s) => s.status === "available").length;
+  let label = `${free} kosong`;
+  if (day.slots.length === 0) label = "Libur";
+  else if (free === 0)
+    label = day.slots.every((s) => s.status === "past") ? "Lewat" : "Penuh";
+  return {
+    date: day.date,
+    short: DAY_SHORT[day.dayOfWeek],
+    day: dayNumber(day.date),
+    long: formatLongDate(day.date),
+    open: free > 0,
+    label,
+  };
+}
 
 export function BookingPage() {
   const [step, setStep] = useState(0);
   const [booking, setBooking] = useState<BookingState>(EMPTY);
   const [touched, setTouched] = useState({ name: false, phone: false });
-  const [status, setStatus] = useState<SubmitStatus>("idle");
-  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<BookingResult | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Slot yang keburu diambil pasien lain saat konfirmasi.
-  const [lostSlots, setLostSlots] = useState<string[]>([]);
   const [conflictTime, setConflictTime] = useState<string | null>(null);
+
+  const [services, reloadServices] = useLoad("all", () =>
+    bookingApi.services(),
+  );
+  const [doctors, reloadDoctors] = useLoad(booking.serviceId, (serviceId) =>
+    bookingApi.doctors(serviceId).then((list) => list.map(toDoctorView)),
+  );
+  const [availability, reloadAvailability] = useLoad(
+    booking.doctorId,
+    (doctorId) => bookingApi.availability(doctorId).then((a) => a.days),
+  );
 
   const headingRef = useRef<HTMLHeadingElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const isDone = status === "done";
+  const isDone = result !== null;
   const viewKeyRef = useRef(`${step}|${isDone}`);
 
+  const stepLoad =
+    step === 0
+      ? services.state
+      : step === 1
+        ? doctors.state
+        : step === 2
+          ? availability.state
+          : "ready";
+  const pendingFocusRef = useRef(false);
+
   // Pindahkan fokus ke judul langkah saat berganti langkah (bukan saat muat awal).
+  // Bila isi langkah masih dimuat, fokus diulang ke judul baru setelah data siap.
   useEffect(() => {
     const key = `${step}|${isDone}`;
-    if (viewKeyRef.current === key) return;
-    viewKeyRef.current = key;
+    if (viewKeyRef.current !== key) {
+      viewKeyRef.current = key;
+      pendingFocusRef.current = true;
+    }
+    if (!pendingFocusRef.current) return;
     headingRef.current?.focus();
-  }, [step, isDone]);
+    if (stepLoad !== "loading") pendingFocusRef.current = false;
+  }, [step, isDone, stepLoad]);
 
-  const service = SERVICES.find((s) => s.id === booking.serviceId);
-  const doctor = DOCTORS.find((d) => d.id === booking.doctorId);
-  const date = DATES.find((d) => d.id === booking.dateId);
-  const doctorsForService = booking.serviceId
-    ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
-    : [];
-  const days = doctor
-    ? DATES.map((d) => ({ ...d, ...dayInfo(doctor, d, lostSlots) }))
-    : [];
-  const slots = doctor ? buildSlots(doctor.startHour, doctor.endHour) : [];
-  const takenSlots =
-    doctor && date ? takenFor(doctor.id, date.id, lostSlots) : [];
+  const serviceList: Service[] =
+    services.state === "ready" ? services.data : [];
+  const doctorList: DoctorView[] =
+    doctors.state === "ready" ? doctors.data : [];
+  const dayList: AvailabilityDay[] =
+    availability.state === "ready" ? availability.data : [];
+
+  const service = serviceList.find((s) => s.id === booking.serviceId);
+  const doctor = doctorList.find((d) => d.id === booking.doctorId);
+  const days = dayList.map(dayOption);
+  const selectedDay = dayList.find((d) => d.date === booking.date);
 
   const nameProblem = nameError(booking.name);
   const phoneProblem = phoneError(booking.phone);
@@ -127,7 +223,10 @@ export function BookingPage() {
       step: 2,
       label: "Jadwal",
       icon: <CalendarClock />,
-      value: date && booking.time ? `${date.long}, pukul ${booking.time}` : "",
+      value:
+        booking.date && booking.time
+          ? `${formatLongDate(booking.date)}, pukul ${displayTime(booking.time)}`
+          : "",
     },
     {
       id: "pasien",
@@ -141,32 +240,26 @@ export function BookingPage() {
   ];
 
   function chooseService(id: string) {
-    setBooking((prev) => {
-      const current = DOCTORS.find((d) => d.id === prev.doctorId);
-      // Dokter yang tidak melayani layanan baru dilepas, beserta jadwalnya.
-      if (current && !current.serviceIds.includes(id))
-        return {
-          ...prev,
-          serviceId: id,
-          doctorId: null,
-          dateId: null,
-          time: null,
-        };
-      return { ...prev, serviceId: id };
-    });
+    // Daftar dokter dimuat ulang untuk layanan baru; pilihan dokter dilepas.
+    setBooking((prev) =>
+      prev.serviceId === id
+        ? prev
+        : { ...prev, serviceId: id, doctorId: null, date: null, time: null },
+    );
   }
 
   function chooseDoctor(id: string) {
     setBooking((prev) =>
       prev.doctorId === id
         ? prev
-        : { ...prev, doctorId: id, dateId: null, time: null },
+        : { ...prev, doctorId: id, date: null, time: null },
     );
+    setConflictTime(null);
   }
 
-  function chooseDate(id: string) {
+  function chooseDate(date: string) {
     setBooking((prev) =>
-      prev.dateId === id ? prev : { ...prev, dateId: id, time: null },
+      prev.date === date ? prev : { ...prev, date, time: null },
     );
   }
 
@@ -176,38 +269,33 @@ export function BookingPage() {
   }
 
   async function submit() {
-    if (
-      status === "submitting" ||
-      !booking.doctorId ||
-      !booking.dateId ||
-      !booking.time
-    )
-      return;
-    setStatus("submitting");
+    const { serviceId, doctorId, date, time } = booking;
+    if (submitting || !serviceId || !doctorId || !date || !time) return;
+    setSubmitting(true);
     setSubmitError(null);
     try {
-      const result = await submitBookingMock({
-        doctorId: booking.doctorId,
-        dateId: booking.dateId,
-        time: booking.time,
-      });
-      if (result.ok) {
-        setCode(result.code);
-        setStatus("done");
-        return;
-      }
-      // Slot keburu diambil pasien lain: tandai penuh dan kembali ke langkah jadwal.
-      const key = `${booking.doctorId}|${booking.dateId}|${booking.time}`;
-      setLostSlots((prev) => (prev.includes(key) ? prev : [...prev, key]));
-      setConflictTime(booking.time);
-      setBooking((prev) => ({ ...prev, time: null }));
-      setStatus("idle");
-      setStep(2);
-    } catch {
-      setStatus("idle");
-      setSubmitError(
-        "Janji temu belum tersimpan karena gangguan koneksi. Coba lagi sebentar.",
+      setResult(
+        await bookingApi.create({
+          serviceId,
+          doctorId,
+          date,
+          time,
+          name: trimmedName,
+          phone: booking.phone,
+        }),
       );
+    } catch (error) {
+      if (error instanceof ApiFailure && error.code === "SLOT_TAKEN") {
+        // Keburu diambil pasien lain: muat ulang slot dan kembali ke langkah jadwal.
+        setConflictTime(time);
+        setBooking((prev) => ({ ...prev, time: null }));
+        reloadAvailability();
+        setStep(2);
+      } else {
+        setSubmitError(messageOf(error));
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -222,7 +310,7 @@ export function BookingPage() {
   }
 
   function goBack() {
-    if (status === "submitting") return;
+    if (submitting) return;
     setStep((s) => Math.max(0, s - 1));
   }
 
@@ -231,27 +319,24 @@ export function BookingPage() {
     setTouched({ name: false, phone: false });
     setConflictTime(null);
     setSubmitError(null);
-    setCode("");
-    setStatus("idle");
+    setResult(null);
     setStep(0);
   }
 
   const canNext =
     step === 0
-      ? Boolean(booking.serviceId)
+      ? Boolean(service)
       : step === 1
-        ? Boolean(booking.doctorId)
+        ? Boolean(doctor)
         : step === 2
-          ? Boolean(booking.dateId && booking.time)
+          ? Boolean(booking.date && booking.time)
           : true;
 
   let hint = "";
-  if (step === 0 && !booking.serviceId)
-    hint = "Pilih satu layanan untuk lanjut.";
-  if (step === 1 && !booking.doctorId) hint = "Pilih dokter untuk lanjut.";
-  if (step === 2 && !booking.dateId)
-    hint = "Pilih tanggal dan jam untuk lanjut.";
-  if (step === 2 && booking.dateId && !booking.time)
+  if (step === 0 && !service) hint = "Pilih satu layanan untuk lanjut.";
+  if (step === 1 && !doctor) hint = "Pilih dokter untuk lanjut.";
+  if (step === 2 && !booking.date) hint = "Pilih tanggal dan jam untuk lanjut.";
+  if (step === 2 && booking.date && !booking.time)
     hint = "Pilih jam untuk lanjut.";
 
   return (
@@ -262,10 +347,21 @@ export function BookingPage() {
         id="main-content"
         className="relative z-10 -mt-16 px-3 pb-10 md:px-8 md:pb-16"
       >
-        {isDone ? (
+        {result ? (
           <BookingSuccess
-            code={code}
-            rows={summary}
+            code={result.code}
+            rows={[
+              { ...summary[0], value: result.serviceName },
+              { ...summary[1], value: result.doctorName },
+              {
+                ...summary[2],
+                value: `${formatLongDate(result.date)}, pukul ${displayTime(result.time)}`,
+              },
+              {
+                ...summary[3],
+                value: `${result.patientName} · ${trimmedPhone}`,
+              },
+            ]}
             phone={trimmedPhone}
             onReset={resetAll}
             headingRef={headingRef}
@@ -282,41 +378,74 @@ export function BookingPage() {
               <Stepper
                 current={step}
                 onJump={(target) => {
-                  if (status !== "submitting" && target < step) setStep(target);
+                  if (!submitting && target < step) setStep(target);
                 }}
               />
 
               {step === 0 ? (
-                <StepService
-                  services={SERVICES}
-                  selectedId={booking.serviceId}
-                  onSelect={chooseService}
-                  headingRef={headingRef}
-                />
+                services.state === "ready" ? (
+                  <StepService
+                    services={services.data}
+                    selectedId={booking.serviceId}
+                    onSelect={chooseService}
+                    headingRef={headingRef}
+                  />
+                ) : (
+                  <Pending
+                    headingRef={headingRef}
+                    title="Pilih layanan"
+                    load={services}
+                    loadingText="Memuat layanan…"
+                    onRetry={reloadServices}
+                  />
+                )
               ) : null}
+
               {step === 1 ? (
-                <StepDoctor
-                  doctors={doctorsForService}
-                  serviceName={service?.name ?? null}
-                  selectedId={booking.doctorId}
-                  onSelect={chooseDoctor}
-                  headingRef={headingRef}
-                />
+                doctors.state === "ready" ? (
+                  <StepDoctor
+                    doctors={doctors.data}
+                    serviceName={service?.name ?? null}
+                    selectedId={booking.doctorId}
+                    onSelect={chooseDoctor}
+                    headingRef={headingRef}
+                  />
+                ) : (
+                  <Pending
+                    headingRef={headingRef}
+                    title="Pilih dokter"
+                    load={doctors}
+                    loadingText="Memuat dokter…"
+                    onRetry={reloadDoctors}
+                  />
+                )
               ) : null}
+
               {step === 2 && doctor ? (
-                <StepSchedule
-                  doctorName={doctor.name}
-                  days={days}
-                  selectedDateId={booking.dateId}
-                  onSelectDate={chooseDate}
-                  slots={slots}
-                  takenSlots={takenSlots}
-                  selectedTime={booking.time}
-                  onSelectTime={chooseTime}
-                  conflictTime={conflictTime}
-                  headingRef={headingRef}
-                />
+                availability.state === "ready" ? (
+                  <StepSchedule
+                    doctorName={doctor.name}
+                    monthLabel={monthRangeLabel(dayList.map((d) => d.date))}
+                    days={days}
+                    selectedDate={booking.date}
+                    onSelectDate={chooseDate}
+                    slots={selectedDay?.slots ?? []}
+                    selectedTime={booking.time}
+                    onSelectTime={chooseTime}
+                    conflictTime={conflictTime}
+                    headingRef={headingRef}
+                  />
+                ) : (
+                  <Pending
+                    headingRef={headingRef}
+                    title="Pilih tanggal & jam"
+                    load={availability}
+                    loadingText="Memuat jam yang masih kosong…"
+                    onRetry={reloadAvailability}
+                  />
+                )
               ) : null}
+
               {step === 3 ? (
                 <StepPatient
                   name={booking.name}
@@ -334,6 +463,7 @@ export function BookingPage() {
                   headingRef={headingRef}
                 />
               ) : null}
+
               {step === 4 ? (
                 <StepConfirm
                   rows={summary}
@@ -347,7 +477,7 @@ export function BookingPage() {
                 step={step}
                 canNext={canNext}
                 hint={hint}
-                submitting={status === "submitting"}
+                submitting={submitting}
                 onBack={goBack}
                 onNext={goNext}
               />
@@ -380,6 +510,31 @@ export function BookingPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function Pending<T>({
+  headingRef,
+  title,
+  load,
+  loadingText,
+  onRetry,
+}: {
+  headingRef: React.RefObject<HTMLHeadingElement | null>;
+  title: string;
+  load: Load<T>;
+  loadingText: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <StepHeading headingRef={headingRef} title={title} />
+      {load.state === "error" ? (
+        <ErrorNote message={load.message} onRetry={onRetry} />
+      ) : (
+        <LoadingNote>{loadingText}</LoadingNote>
+      )}
     </div>
   );
 }

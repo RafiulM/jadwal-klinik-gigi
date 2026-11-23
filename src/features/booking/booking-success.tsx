@@ -1,4 +1,5 @@
-import { Check, MessageCircle, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Check, ExternalLink, MessageCircle, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { SummaryList } from "./summary-list";
 
@@ -61,7 +62,15 @@ export function BookingSuccess({
         </span>
       </p>
 
-      <div className="flex justify-center">
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link
+          to="/janji/$code"
+          params={{ code }}
+          className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none"
+        >
+          <ExternalLink className="size-4" aria-hidden="true" />
+          Buka bukti booking
+        </Link>
         <button
           type="button"
           onClick={onReset}
