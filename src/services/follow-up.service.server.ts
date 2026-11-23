@@ -1,4 +1,5 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db/index.server";
 import {
   appointments,
@@ -11,12 +12,15 @@ import { maskPhone } from "@/lib/phone";
 
 // Jadwal kontrol berikutnya dan riwayat kunjungan pasien (khusus staf klinik).
 
+const sourceVisit = alias(appointments, "source_visit");
+
 const followUpColumns = {
   id: followUps.id,
   dueDate: followUps.dueDate,
   status: followUps.status,
   notes: followUps.notes,
   sourceVisitId: followUps.sourceAppointmentId,
+  sourceVisitDate: sourceVisit.appointmentDate,
   bookedAppointmentId: followUps.bookedAppointmentId,
   serviceId: services.id,
   serviceName: services.name,
@@ -34,6 +38,7 @@ export function selectFollowUps() {
     .innerJoin(services, eq(services.id, followUps.serviceId))
     .innerJoin(doctors, eq(doctors.id, followUps.doctorId))
     .innerJoin(patients, eq(patients.id, followUps.patientId))
+    .leftJoin(sourceVisit, eq(sourceVisit.id, followUps.sourceAppointmentId))
     .$dynamic();
 }
 
@@ -46,6 +51,7 @@ export function toFollowUp(row: FollowUpRow, phone: (value: string) => string) {
     status: row.status,
     notes: row.notes,
     sourceVisitId: row.sourceVisitId,
+    sourceVisitDate: row.sourceVisitDate,
     bookedAppointmentId: row.bookedAppointmentId,
     service: { id: row.serviceId, name: row.serviceName },
     doctor: { id: row.doctorId, name: row.doctorName },
@@ -109,3 +115,21 @@ export async function getPatientHistory(patientId: string) {
 export type PatientHistory = NonNullable<
   Awaited<ReturnType<typeof getPatientHistory>>
 >;
+
+/**
+ * Daftar kontrol untuk halaman Kontrol pasien: yang belum booking dulu, lalu
+ * jatuh tempo paling awal. Nomor HP utuh karena staf perlu menghubungi pasien
+ * yang belum booking. Kontrol selesai hanya yang 90 hari terakhir.
+ */
+export async function listFollowUps(today: string) {
+  const rows = await selectFollowUps()
+    .where(
+      sql`${followUps.status} <> 'done' or ${followUps.dueDate} >= (${today}::date - 90)`,
+    )
+    .orderBy(
+      sql`case ${followUps.status} when 'pending' then 0 when 'booked' then 1 else 2 end`,
+      asc(followUps.dueDate),
+    )
+    .limit(500);
+  return rows.map((row) => toFollowUp(row, (phone) => phone));
+}

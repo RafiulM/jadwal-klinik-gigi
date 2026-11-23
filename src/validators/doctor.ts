@@ -22,7 +22,16 @@ export const updateAppointmentSchema = z
       .optional(),
     // Tanggal kontrol berikutnya; "" atau null menghapusnya. Hanya untuk
     // kunjungan yang (akan) berstatus selesai.
-    followUpDate: z.union([isoDate, z.literal(""), z.null()]).optional(),
+    // Dokter tidak dipaksa mengisi: boleh dikosongkan bila pasien tidak perlu kontrol.
+    followUpDate: z
+      .union([
+        z.null(),
+        z
+          .string()
+          .trim()
+          .pipe(z.union([z.literal(""), isoDate])),
+      ])
+      .optional(),
   })
   .strict()
   .refine(
