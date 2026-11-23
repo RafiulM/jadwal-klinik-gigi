@@ -161,3 +161,42 @@ test("halaman Kelola klinik hanya untuk admin", async ({ page }) => {
     page.getByRole("heading", { name: "Kelola klinik" }),
   ).toBeVisible();
 });
+
+test("sesi aktif dan penjaga rute mengikuti peran staf", async ({
+  page,
+  request,
+}) => {
+  expect((await request.get("/api/staff/me")).status()).toBe(401);
+
+  const email = await signUp(page.request, "Staf Peran");
+  const me = async () =>
+    (await (await page.request.get("/api/staff/me")).json()).data;
+  expect(await me()).toMatchObject({
+    email,
+    roles: [],
+    home: "/tanpa-akses",
+    doctor: null,
+  });
+
+  // Pemilik: papan jadwal boleh, Kelola klinik dan jadwal dokter tidak.
+  await setRole(email, "pemilik");
+  expect((await me()).roles).toEqual(["pemilik"]);
+  await page.goto("/jadwal");
+  await expect(page).toHaveURL(/\/jadwal$/);
+  await page.goto("/kelola");
+  await expect(page).toHaveURL(/\/rekap$/);
+  await page.goto("/dokter");
+  await expect(page).toHaveURL(/\/rekap$/);
+
+  // Admin: ke halaman dokter diarahkan ke papan jadwal.
+  await setRole(email, "admin");
+  await page.goto("/dokter");
+  await expect(page).toHaveURL(/\/jadwal$/);
+  await page.goto("/masuk");
+  await expect(page).toHaveURL(/\/jadwal$/);
+
+  // Peran dicabut: semua halaman staf menuju /tanpa-akses.
+  await setRole(email, null);
+  await page.goto("/kontrol");
+  await expect(page).toHaveURL(/\/tanpa-akses$/);
+});

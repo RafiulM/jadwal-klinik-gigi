@@ -78,3 +78,15 @@ export function roleLabel(roles: StaffRole[]) {
 export function homeForRoles(roles: StaffRole[]) {
   return roles.length ? ROLE_INFO[roles[0]].home : null;
 }
+
+/**
+ * Peran yang boleh membuka tiap halaman staf. Satu sumber untuk penjaga rute
+ * (requireStaffRole) dan menu; API tetap memeriksa izin sendiri.
+ */
+export const PAGE_ROLES = {
+  "/dokter": ["dokter"],
+  "/kontrol": ["dokter", "admin"],
+  "/jadwal": ["admin", "pemilik"],
+  "/kelola": ["admin"],
+  "/rekap": ["pemilik"],
+} satisfies Record<string, StaffRole[]>;
