@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge, type AppointmentStatus } from "@/components/status-badge";
 import { TODAY, TODAY_APPOINTMENTS, type TodayAppointment } from "./mock-data";
 import { MarkedVisit, PendingVisitActions } from "./visit-actions";
+import { NoteField, SavedNote } from "./visit-note";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
   { id: "semua", label: "Semua" },
@@ -56,6 +57,8 @@ export function DoctorTodayPage() {
   const [appointments, setAppointments] =
     useState<TodayAppointment[]>(TODAY_APPOINTMENTS);
   const [message, setMessage] = useState("");
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState(false);
   const [busy, setBusy] = useState<"done" | "no_show" | "undo" | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusHeadingRef = useRef(false);
@@ -123,8 +126,13 @@ export function DoctorTodayPage() {
     if (!selected || busy) return;
     setBusy(kind);
     await new Promise((resolve) => setTimeout(resolve, 400));
+    const note = (noteDrafts[selected.id] ?? selected.notes).trim();
     setAppointments((prev) =>
-      prev.map((a) => (a.id === selected.id ? { ...a, status } : a)),
+      prev.map((a) =>
+        a.id === selected.id
+          ? { ...a, status, notes: status === "completed" ? note : a.notes }
+          : a,
+      ),
     );
     focusHeadingRef.current = true;
     setMessage(
@@ -135,6 +143,19 @@ export function DoctorTodayPage() {
           : `Tanda untuk ${selected.patient.name} dibatalkan. Status kembali menunggu.`,
     );
     setBusy(null);
+  }
+
+  // Simulasi PATCH catatan sampai API tersedia.
+  async function saveNote(note: string) {
+    if (!selected) return;
+    setSavingNote(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === selected.id ? { ...a, notes: note } : a)),
+    );
+    setNoteDrafts((prev) => ({ ...prev, [selected.id]: note }));
+    setMessage(`Catatan untuk ${selected.patient.name} disimpan.`);
+    setSavingNote(false);
   }
 
   function goToPatient(id: string) {
@@ -427,7 +448,14 @@ export function DoctorTodayPage() {
                 busy={busy === "done" || busy === "no_show" ? busy : null}
                 onDone={() => changeStatus("completed", "done")}
                 onNoShow={() => changeStatus("no_show", "no_show")}
-              />
+              >
+                <NoteField
+                  value={noteDrafts[selected.id] ?? selected.notes}
+                  onChange={(value) =>
+                    setNoteDrafts((prev) => ({ ...prev, [selected.id]: value }))
+                  }
+                />
+              </PendingVisitActions>
             ) : (
               <MarkedVisit
                 appointment={selected}
@@ -435,7 +463,16 @@ export function DoctorTodayPage() {
                 onNext={() => nextPatient && goToPatient(nextPatient.id)}
                 onUndo={() => changeStatus("scheduled", "undo")}
                 busy={busy !== null}
-              />
+              >
+                {selected.status === "completed" ? (
+                  <SavedNote
+                    key={selected.id}
+                    note={selected.notes}
+                    saving={savingNote}
+                    onSave={saveNote}
+                  />
+                ) : null}
+              </MarkedVisit>
             )}
           </section>
         ) : null}
