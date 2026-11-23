@@ -10,7 +10,8 @@ export type DoctorDayQuery = z.infer<typeof doctorDayQuerySchema>;
 
 export const appointmentIdSchema = uuid;
 
-// PATCH /api/doctor/appointments/:id — tandai hasil kunjungan dan/atau catatan.
+// PATCH /api/doctor/appointments/:id — tandai hasil kunjungan, catatan, dan
+// tanggal kontrol berikutnya.
 export const updateAppointmentSchema = z
   .object({
     status: z.enum(["scheduled", "completed", "no_show"]).optional(),
@@ -19,11 +20,18 @@ export const updateAppointmentSchema = z
       .trim()
       .max(2000, "Catatan maksimal 2000 karakter.")
       .optional(),
+    // Tanggal kontrol berikutnya; "" atau null menghapusnya. Hanya untuk
+    // kunjungan yang (akan) berstatus selesai.
+    followUpDate: z.union([isoDate, z.literal(""), z.null()]).optional(),
   })
   .strict()
-  .refine((value) => value.status !== undefined || value.notes !== undefined, {
-    message: "Kirim status atau catatan.",
-  });
+  .refine(
+    (value) =>
+      value.status !== undefined ||
+      value.notes !== undefined ||
+      value.followUpDate !== undefined,
+    { message: "Kirim status, catatan, atau tanggal kontrol." },
+  );
 
 export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
 

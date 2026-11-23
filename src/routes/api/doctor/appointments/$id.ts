@@ -10,7 +10,30 @@ import {
   updateAppointmentSchema,
 } from "@/validators/doctor";
 
-// PATCH /api/doctor/appointments/:id  { status?, notes? }
+const UPDATE_ERRORS: Record<
+  AppointmentUpdateError["reason"],
+  [status: number, message: string]
+> = {
+  NOT_FOUND: [404, "Janji temu tidak ditemukan."],
+  NOT_STARTED: [
+    409,
+    "Janji temu ini belum berlangsung, jadi belum bisa ditandai.",
+  ],
+  FOLLOW_UP_NEEDS_COMPLETED: [
+    409,
+    "Tanggal kontrol hanya bisa diisi untuk kunjungan yang selesai.",
+  ],
+  FOLLOW_UP_DATE_RANGE: [
+    422,
+    "Tanggal kontrol harus setelah hari ini dan paling lambat 2 tahun lagi.",
+  ],
+  FOLLOW_UP_LOCKED: [
+    409,
+    "Pasien sudah booking kontrol ini, jadi tanggalnya tidak bisa diubah di sini.",
+  ],
+};
+
+// PATCH /api/doctor/appointments/:id  { status?, notes?, followUpDate? }
 // Dokter menandai pasiennya selesai / tidak datang / kembali menunggu dan
 // menyimpan catatan. Hanya janji temu milik dokter yang login.
 export const Route = createFileRoute("/api/doctor/appointments/$id")({
@@ -37,17 +60,8 @@ export const Route = createFileRoute("/api/doctor/appointments/$id")({
             return Response.json({ data: appointment });
           } catch (error) {
             if (!(error instanceof AppointmentUpdateError)) throw error;
-            if (error.reason === "NOT_FOUND")
-              throw new ApiError(
-                404,
-                "NOT_FOUND",
-                "Janji temu tidak ditemukan.",
-              );
-            throw new ApiError(
-              409,
-              "NOT_STARTED",
-              "Janji temu ini belum berlangsung, jadi belum bisa ditandai.",
-            );
+            const [status, message] = UPDATE_ERRORS[error.reason];
+            throw new ApiError(status, error.reason, message);
           }
         }),
     },

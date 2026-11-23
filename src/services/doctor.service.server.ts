@@ -1,13 +1,15 @@
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/index.server";
 import {
   appointments,
   doctorSchedules,
   doctors,
+  followUps,
+  outboxEvents,
   patients,
   services,
 } from "@/db/schema";
-import { clinicNow, dayOfWeek } from "@/lib/clinic-time";
+import { addDays, clinicNow, dayOfWeek } from "@/lib/clinic-time";
 import { maskPhone } from "@/lib/phone";
 import type { UpdateAppointmentInput } from "@/validators/doctor";
 
@@ -40,6 +42,8 @@ function selectAppointments(where: SQL | undefined) {
       patientId: patients.id,
       patientName: patients.name,
       patientPhone: patients.phone,
+      followUpDate: followUps.dueDate,
+      followUpStatus: followUps.status,
       // Pasien baru = belum pernah punya kunjungan selesai sebelum tanggal ini.
       firstVisit: sql<boolean>`not exists (
         select 1 from ${appointments} as prev
@@ -51,6 +55,7 @@ function selectAppointments(where: SQL | undefined) {
     .from(appointments)
     .innerJoin(patients, eq(patients.id, appointments.patientId))
     .innerJoin(services, eq(services.id, appointments.serviceId))
+    .leftJoin(followUps, eq(followUps.sourceAppointmentId, appointments.id))
     .where(where)
     .orderBy(asc(appointments.startTime));
 }
@@ -65,7 +70,8 @@ function toAppointment(row: AppointmentRow) {
     endTime: hhmm(row.endTime),
     status: row.status,
     notes: row.notes ?? "",
-    followUpDate: "",
+    followUpDate: row.followUpDate ?? "",
+    followUpStatus: row.followUpStatus,
     service: {
       id: row.serviceId,
       name: row.serviceName,
@@ -126,15 +132,37 @@ export async function getDoctorDay(
 export type DoctorDay = Awaited<ReturnType<typeof getDoctorDay>>;
 
 export class AppointmentUpdateError extends Error {
-  constructor(public reason: "NOT_FOUND" | "NOT_STARTED") {
+  constructor(
+    public reason:
+      | "NOT_FOUND"
+      | "NOT_STARTED"
+      | "FOLLOW_UP_NEEDS_COMPLETED"
+      | "FOLLOW_UP_DATE_RANGE"
+      | "FOLLOW_UP_LOCKED",
+  ) {
     super(reason);
   }
 }
 
+function daysBetween(from: string, to: string) {
+  return Math.round(
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+      86_400_000,
+  );
+}
+
 /**
  * Dokter menandai hasil kunjungan miliknya: selesai, tidak datang, atau
- * dikembalikan ke menunggu; sekaligus menyimpan catatan. Kunjungan di masa
- * depan tidak bisa ditandai selesai/tidak datang dan belum bisa diberi catatan.
+ * dikembalikan ke menunggu; sekaligus menyimpan catatan dan tanggal kontrol
+ * berikutnya (tabel follow_ups). Semua perubahan terjadi dalam satu transaksi.
+ *
+ * Aturan:
+ * - Kunjungan yang belum tiba tidak bisa ditandai atau diberi catatan.
+ * - Tanggal kontrol hanya untuk kunjungan selesai, setelah hari ini dan paling
+ *   lambat 2 tahun lagi. Kontrol yang sudah dibooking/dijalani tidak diubah.
+ * - Membatalkan tanda selesai menghapus kontrol yang belum dibooking.
+ * - Menandai selesai kunjungan yang merupakan booking kontrol menutup kontrol
+ *   itu (done); membatalkannya mengembalikan ke booked.
  */
 export async function updateDoctorAppointment(
   doctorId: string,
@@ -146,33 +174,105 @@ export async function updateDoctorAppointment(
     eq(appointments.id, appointmentId),
     eq(appointments.doctorId, doctorId),
   );
-  const [current] = await db
-    .select({
-      date: appointments.appointmentDate,
-      status: appointments.status,
-    })
-    .from(appointments)
-    .where(own)
-    .limit(1);
-  if (!current) throw new AppointmentUpdateError("NOT_FOUND");
+  const today = clinicNow().date;
 
-  const changes: Partial<typeof appointments.$inferInsert> = {};
-  if (input.status !== undefined && input.status !== current.status) {
-    if (input.status !== "scheduled" && current.date > clinicNow().date)
-      throw new AppointmentUpdateError("NOT_STARTED");
-    changes.status = input.status;
-    changes.completedAt = input.status === "completed" ? new Date() : null;
-    changes.statusChangedAt = new Date();
-    changes.statusChangedBy = userId;
-  }
-  if (input.notes !== undefined) {
-    if (current.date > clinicNow().date)
-      throw new AppointmentUpdateError("NOT_STARTED");
-    changes.notes = input.notes || null;
-  }
+  await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        date: appointments.appointmentDate,
+        status: appointments.status,
+        patientId: appointments.patientId,
+        serviceId: appointments.serviceId,
+      })
+      .from(appointments)
+      .where(own)
+      .for("update")
+      .limit(1);
+    if (!current) throw new AppointmentUpdateError("NOT_FOUND");
+    const started = current.date <= today;
+    const nextStatus = input.status ?? current.status;
 
-  if (Object.keys(changes).length)
-    await db.update(appointments).set(changes).where(own);
+    const changes: Partial<typeof appointments.$inferInsert> = {};
+    if (input.status !== undefined && input.status !== current.status) {
+      if (input.status !== "scheduled" && !started)
+        throw new AppointmentUpdateError("NOT_STARTED");
+      changes.status = input.status;
+      changes.completedAt = input.status === "completed" ? new Date() : null;
+      changes.statusChangedAt = new Date();
+      changes.statusChangedBy = userId;
+    }
+    if (input.notes !== undefined) {
+      if (!started) throw new AppointmentUpdateError("NOT_STARTED");
+      changes.notes = input.notes || null;
+    }
+    if (Object.keys(changes).length)
+      await tx.update(appointments).set(changes).where(own);
+
+    const [existing] = await tx
+      .select({ id: followUps.id, status: followUps.status })
+      .from(followUps)
+      .where(eq(followUps.sourceAppointmentId, appointmentId))
+      .limit(1);
+
+    // Tanda selesai dibatalkan: kontrol yang belum dibooking ikut dihapus.
+    if (nextStatus !== "completed" && existing?.status === "pending")
+      await tx.delete(followUps).where(eq(followUps.id, existing.id));
+
+    if (input.followUpDate !== undefined) {
+      if (nextStatus !== "completed")
+        throw new AppointmentUpdateError("FOLLOW_UP_NEEDS_COMPLETED");
+      if (existing && existing.status !== "pending")
+        throw new AppointmentUpdateError("FOLLOW_UP_LOCKED");
+      const dueDate = input.followUpDate || null;
+      if (dueDate && (dueDate <= today || dueDate > addDays(today, 730)))
+        throw new AppointmentUpdateError("FOLLOW_UP_DATE_RANGE");
+
+      if (!dueDate) {
+        if (existing)
+          await tx.delete(followUps).where(eq(followUps.id, existing.id));
+      } else {
+        const values = {
+          dueDate,
+          intervalDays: daysBetween(current.date, dueDate),
+        };
+        const [saved] = existing
+          ? await tx
+              .update(followUps)
+              .set(values)
+              .where(eq(followUps.id, existing.id))
+              .returning({ id: followUps.id })
+          : await tx
+              .insert(followUps)
+              .values({
+                ...values,
+                patientId: current.patientId,
+                serviceId: current.serviceId,
+                doctorId,
+                sourceAppointmentId: appointmentId,
+                createdBy: userId,
+              })
+              .returning({ id: followUps.id });
+        // n8n menjadwalkan pengingat kontrol ke pasien dari event ini.
+        await tx.insert(outboxEvents).values({
+          eventType: "follow_up_scheduled",
+          appointmentId,
+          payload: { followUpId: saved.id, appointmentId, dueDate },
+        });
+      }
+    }
+
+    // Kunjungan ini sendiri adalah booking kontrol: selesai → kontrol done.
+    if (changes.status !== undefined)
+      await tx
+        .update(followUps)
+        .set({ status: nextStatus === "completed" ? "done" : "booked" })
+        .where(
+          and(
+            eq(followUps.bookedAppointmentId, appointmentId),
+            inArray(followUps.status, ["booked", "done"]),
+          ),
+        );
+  });
 
   const [row] = await selectAppointments(own);
   return toAppointment(row);
