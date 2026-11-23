@@ -32,6 +32,7 @@ function selectAppointments(where: SQL | undefined) {
     .select({
       id: appointments.id,
       code: appointments.code,
+      date: appointments.appointmentDate,
       startTime: appointments.startTime,
       endTime: appointments.endTime,
       status: appointments.status,
@@ -75,7 +76,12 @@ function toAppointment(row: AppointmentRow) {
     service: {
       id: row.serviceId,
       name: row.serviceName,
+      // Interval kontrol rutin layanan (hari) dan saran tanggal kontrolnya
+      // dihitung dari tanggal kunjungan; null bila layanan tanpa kontrol rutin.
       followUpDays: row.followUpDays,
+      suggestedFollowUpDate: row.followUpDays
+        ? addDays(row.date, row.followUpDays)
+        : null,
     },
     patient: {
       id: row.patientId,
