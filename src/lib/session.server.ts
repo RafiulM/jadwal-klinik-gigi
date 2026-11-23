@@ -1,3 +1,4 @@
+import { env } from "@/lib/env.server";
 import { auth } from "@/lib/auth.server";
 import type { Permissions } from "@/lib/permissions";
 
@@ -14,4 +15,9 @@ export async function hasPermission(userId: string, permissions: Permissions) {
     body: { userId, permissions },
   });
   return success;
+}
+
+/** Origin publik dari BETTER_AUTH_URL (alamat app yang dipakai pengunjung). */
+export function siteOrigin() {
+  return new URL(env.BETTER_AUTH_URL).origin;
 }

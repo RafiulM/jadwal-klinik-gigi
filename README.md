@@ -82,6 +82,7 @@ The same doc covers **role-based access**: `src/lib/permissions.ts` declares res
 | `npm run role:set`            | Grant a role: `npm run role:set -- you@example.com admin`                |
 | `npm run db:seed`             | Isi layanan, dokter contoh, dan jam praktik bila database masih kosong   |
 | `npm run db:seed:demo`        | Isi janji temu contoh minggu ini; hapus dengan `-- --hapus`              |
+| `npm run brand:assets`        | Buat ulang ikon PNG & gambar pratinjau link dari logo                    |
 | `npm run db:studio`           | Inspect the database with Drizzle Studio                                 |
 | `npm run check`               | Lint, typecheck, and tests against disposable PostgreSQL                 |
 | `npm run build` / `npm start` | Build and serve the production app                                       |

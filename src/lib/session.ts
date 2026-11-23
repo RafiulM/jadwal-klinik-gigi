@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { getSession, hasPermission } from "@/lib/session.server";
+import { getSession, hasPermission, siteOrigin } from "@/lib/session.server";
 import type { Permissions } from "@/lib/permissions";
 
 // Server functions: the handler bodies run only on the server, so route files
@@ -23,3 +23,9 @@ export const hasPermissionFn = createServerFn({ method: "GET" })
     const session = await getSession(requestHeaders());
     return session ? hasPermission(session.user.id, data) : false;
   });
+
+// Asal (origin) publik aplikasi untuk URL absolut di meta tag, mis. gambar
+// pratinjau link (og:image) yang dibaca WhatsApp. Bukan rahasia.
+export const getSiteOriginFn = createServerFn({ method: "GET" }).handler(() =>
+  siteOrigin(),
+);

@@ -10,19 +10,43 @@ import {
 import { siteConfig } from "@/config/site";
 import { Providers } from "@/components/providers";
 import { Button } from "@/components/ui/button";
-import { getSessionFn } from "@/lib/session";
+import { Brand } from "@/components/brand";
+import { getSessionFn, getSiteOriginFn } from "@/lib/session";
 import globalsCss from "@/styles/globals.css?url";
 
 export const Route = createRootRoute({
   // One session read per navigation, shared with every route as context.
   // Layouts decide what to do with it; API routes check on their own.
   beforeLoad: async () => ({ session: await getSessionFn() }),
-  head: () => ({
+  // Origin publik untuk URL absolut gambar pratinjau link; cukup sekali.
+  loader: async () => ({ origin: await getSiteOriginFn() }),
+  staleTime: Infinity,
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: `${siteConfig.name} — Booking janji temu` },
       { name: "description", content: siteConfig.description },
+      { name: "theme-color", content: "#0d3f37" },
+      // Pratinjau saat link booking dibagikan (WhatsApp, Instagram, dsb.).
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: siteConfig.name },
+      {
+        property: "og:title",
+        content: `${siteConfig.name} — Booking janji temu`,
+      },
+      {
+        property: "og:description",
+        content:
+          "Pilih layanan, dokter, dan jam yang masih kosong. Tanpa daftar akun.",
+      },
+      {
+        property: "og:image",
+        content: `${loaderData?.origin ?? ""}/og-image.png`,
+      },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -37,6 +61,8 @@ export const Route = createRootRoute({
       },
       { rel: "stylesheet", href: globalsCss },
       { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootDocument,
@@ -69,7 +95,8 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function NotFound() {
   return (
-    <main id="main-content" className="mx-auto max-w-lg px-6 py-24">
+    <main id="main-content" className="mx-auto max-w-lg px-6 py-16">
+      <Brand subtitle="Booking janji temu" className="mb-12" />
       <p className="mb-3 font-mono text-sm text-primary">404</p>
       <h1 className="text-3xl font-semibold tracking-tight">
         Halaman tidak ditemukan
@@ -87,7 +114,8 @@ function NotFound() {
 function ErrorPage() {
   const router = useRouter();
   return (
-    <main id="main-content" className="mx-auto max-w-lg px-6 py-24">
+    <main id="main-content" className="mx-auto max-w-lg px-6 py-16">
+      <Brand subtitle="Booking janji temu" className="mb-12" />
       <h1 className="text-2xl font-semibold">Terjadi kesalahan</h1>
       <p className="my-4 leading-7 text-muted-foreground">
         Coba muat ulang halaman ini. Kalau masih terjadi, hubungi admin klinik.

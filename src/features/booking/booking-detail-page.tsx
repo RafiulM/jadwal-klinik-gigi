@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/logo";
 import { ApiFailure, bookingApi, type BookingDetail } from "./api";
 import { displayTime, formatLongDate } from "./format";
 import { LoadingNote, type Load } from "./load-state";
@@ -65,11 +66,14 @@ export function BookingDetailPage({ code }: { code: string }) {
   return (
     <div className="min-h-svh bg-background">
       <header className="bg-brand-deep px-4 pt-4 pb-20 text-on-brand-deep md:px-8">
-        <div className="mx-auto flex max-w-[640px] flex-wrap items-baseline gap-2">
-          <Link to="/" className="text-lg font-bold tracking-tight">
-            {siteConfig.name}
+        <div className="mx-auto flex max-w-[640px]">
+          <Link
+            to="/"
+            aria-label={`${siteConfig.name}, halaman booking`}
+            className="flex rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-brand-deep"
+          >
+            <Logo tone="inverse" subtitle="Bukti janji temu" />
           </Link>
-          <p className="text-sm text-on-brand-deep-muted">Bukti janji temu</p>
         </div>
       </header>
       <main
