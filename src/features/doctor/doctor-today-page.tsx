@@ -18,6 +18,7 @@ import {
   followUpDateError,
 } from "@/features/followup/follow-up-field";
 import { SavedFollowUp } from "@/features/followup/saved-follow-up";
+import { FollowUpSuggestion } from "@/features/followup/follow-up-suggestion";
 import { formatLongDate } from "@/features/booking/format";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
@@ -549,7 +550,22 @@ export function DoctorTodayPage() {
                         [selected.id]: value,
                       }))
                     }
-                  />
+                  >
+                    <FollowUpSuggestion
+                      serviceName={selected.service.name}
+                      intervalDays={selected.service.followUpDays}
+                      today={TODAY.date}
+                      value={
+                        followUpDrafts[selected.id] ?? selected.followUpDate
+                      }
+                      onUse={(date) =>
+                        setFollowUpDrafts((prev) => ({
+                          ...prev,
+                          [selected.id]: date,
+                        }))
+                      }
+                    />
+                  </FollowUpDateField>
                 </PendingVisitActions>
               ) : (
                 <MarkedVisit
@@ -572,6 +588,8 @@ export function DoctorTodayPage() {
                       key={`${selected.id}-kontrol`}
                       date={selected.followUpDate}
                       today={TODAY.date}
+                      serviceName={selected.service.name}
+                      intervalDays={selected.service.followUpDays}
                       saving={savingNote}
                       onSave={saveFollowUp}
                     />

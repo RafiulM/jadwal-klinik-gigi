@@ -3,16 +3,21 @@ import { CalendarPlus } from "lucide-react";
 import { formatLongDate } from "@/features/booking/format";
 import { ActionButton } from "@/features/doctor/visit-actions";
 import { FollowUpDateField, followUpDateError } from "./follow-up-field";
+import { FollowUpSuggestion } from "./follow-up-suggestion";
 
 /** Tanggal kontrol dari kunjungan yang sudah selesai: tampil, dan bisa diubah. */
 export function SavedFollowUp({
   date,
   today,
+  serviceName,
+  intervalDays,
   saving,
   onSave,
 }: {
   date: string;
   today: string;
+  serviceName: string;
+  intervalDays: number | null;
   saving: boolean;
   onSave: (date: string) => Promise<void> | void;
 }) {
@@ -28,7 +33,15 @@ export function SavedFollowUp({
           today={today}
           onChange={setDraft}
           showError
-        />
+        >
+          <FollowUpSuggestion
+            serviceName={serviceName}
+            intervalDays={intervalDays}
+            today={today}
+            value={draft}
+            onUse={setDraft}
+          />
+        </FollowUpDateField>
         <div className="flex flex-wrap gap-3">
           <ActionButton
             variant="primary"
