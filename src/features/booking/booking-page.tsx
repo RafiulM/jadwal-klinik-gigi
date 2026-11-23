@@ -13,9 +13,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
-import { DATES, DOCTORS, SERVICES } from "./mock-data";
+import {
+  DATES,
+  DOCTORS,
+  SERVICES,
+  buildSlots,
+  dayInfo,
+  takenFor,
+} from "./mock-data";
 import { StepHeading } from "./step-heading";
 import { StepDoctor } from "./step-doctor";
+import { StepSchedule } from "./step-schedule";
 import { StepService } from "./step-service";
 
 export const STEPS = [
@@ -47,6 +55,9 @@ const EMPTY: BookingState = {
 export function BookingPage() {
   const [step, setStep] = useState(0);
   const [booking, setBooking] = useState<BookingState>(EMPTY);
+  // Slot yang keburu diambil pasien lain saat konfirmasi (dipakai di langkah konfirmasi).
+  const [lostSlots] = useState<string[]>([]);
+  const [conflictTime, setConflictTime] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const lastStepRef = useRef(step);
 
@@ -98,6 +109,24 @@ export function BookingPage() {
     );
   }
 
+  function chooseDate(id: string) {
+    setBooking((prev) =>
+      prev.dateId === id ? prev : { ...prev, dateId: id, time: null },
+    );
+  }
+
+  function chooseTime(time: string) {
+    setBooking((prev) => ({ ...prev, time }));
+    setConflictTime(null);
+  }
+
+  const days = doctor
+    ? DATES.map((d) => ({ ...d, ...dayInfo(doctor, d, lostSlots) }))
+    : [];
+  const slots = doctor ? buildSlots(doctor.startHour, doctor.endHour) : [];
+  const takenSlots =
+    doctor && date ? takenFor(doctor.id, date.id, lostSlots) : [];
+
   const doctorsForService = booking.serviceId
     ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
     : [];
@@ -110,6 +139,12 @@ export function BookingPage() {
         : step === 2
           ? Boolean(booking.dateId && booking.time)
           : true;
+
+  let hint = "";
+  if (step === 0 && !booking.serviceId) hint = "Pilih satu layanan untuk lanjut.";
+  if (step === 1 && !booking.doctorId) hint = "Pilih dokter untuk lanjut.";
+  if (step === 2 && !booking.dateId) hint = "Pilih tanggal dan jam untuk lanjut.";
+  if (step === 2 && booking.dateId && !booking.time) hint = "Pilih jam untuk lanjut.";
 
   return (
     <div className="min-h-svh bg-background">
@@ -141,6 +176,19 @@ export function BookingPage() {
                 onSelect={chooseDoctor}
                 headingRef={headingRef}
               />
+            ) : step === 2 && doctor ? (
+              <StepSchedule
+                doctorName={doctor.name}
+                days={days}
+                selectedDateId={booking.dateId}
+                onSelectDate={chooseDate}
+                slots={slots}
+                takenSlots={takenSlots}
+                selectedTime={booking.time}
+                onSelectTime={chooseTime}
+                conflictTime={conflictTime}
+                headingRef={headingRef}
+              />
             ) : (
               <StepPlaceholder headingRef={headingRef} step={step} />
             )}
@@ -148,6 +196,7 @@ export function BookingPage() {
             <WizardActions
               step={step}
               canNext={canNext}
+              hint={hint}
               onBack={() => setStep((s) => Math.max(0, s - 1))}
               onNext={() =>
                 setStep((s) => Math.min(STEPS.length - 1, s + 1))
@@ -274,20 +323,16 @@ function StepPlaceholder({
 function WizardActions({
   step,
   canNext,
+  hint,
   onBack,
   onNext,
 }: {
   step: number;
   canNext: boolean;
+  hint: string;
   onBack: () => void;
   onNext: () => void;
 }) {
-  const hints = [
-    "Pilih satu layanan untuk lanjut.",
-    "Pilih dokter untuk lanjut.",
-    "Pilih tanggal dan jam untuk lanjut.",
-  ];
-  const hint = !canNext ? hints[step] : "";
   return (
     <div className="sticky bottom-0 z-10 -mx-4 grid gap-2 rounded-b-xl border-t bg-card px-4 py-3 shadow-[0_-8px_24px_rgb(27_36_33/0.08)] md:static md:mx-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:rounded-none md:px-0 md:pt-5 md:pb-0 md:shadow-none">
       <p aria-live="polite" className="text-sm text-muted-foreground empty:hidden">
