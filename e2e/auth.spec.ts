@@ -109,3 +109,50 @@ test("halaman masuk dan daftar muat di layar sempit", async ({ page }) => {
     ),
   ).toBe(true);
 });
+
+test("keluar mengakhiri sesi di server, bukan hanya menghapus cookie", async ({
+  playwright,
+}) => {
+  const client = await playwright.request.newContext({
+    baseURL: "http://localhost:3101",
+  });
+  const headers = { Origin: "http://localhost:3101" };
+  const data = {
+    name: "Staf Keluar",
+    email: `keluar-${Date.now()}@example.com`,
+    password: "Keluar-test-password-123!",
+  };
+  let signUp = await client.post("/api/auth/sign-up/email", { headers, data });
+  if (signUp.status() === 429) {
+    // Server auth membatasi pendaftaran beruntun; tunggu sesuai Retry-After.
+    const seconds = Number(signUp.headers()["retry-after"] || 10);
+    await new Promise((resolve) =>
+      setTimeout(resolve, (Math.min(seconds, 10) + 0.1) * 1000),
+    );
+    signUp = await client.post("/api/auth/sign-up/email", { headers, data });
+  }
+  expect(signUp.status()).toBe(200);
+  expect((await client.get("/api/staff/me")).status()).toBe(200);
+
+  // Simpan cookie sesi lama, lalu keluar.
+  const { cookies } = await client.storageState();
+  const sessionCookie = cookies.find((c) => c.name.includes("session_token"));
+  expect(sessionCookie).toBeTruthy();
+  const signOut = await client.post("/api/auth/sign-out", {
+    headers,
+    data: {},
+  });
+  expect(signOut.status()).toBe(200);
+  expect((await client.get("/api/staff/me")).status()).toBe(401);
+
+  // Cookie lama yang dipakai ulang juga ditolak karena sesinya sudah dihapus.
+  const replay = await playwright.request.newContext({
+    baseURL: "http://localhost:3101",
+    extraHTTPHeaders: {
+      Cookie: `${sessionCookie!.name}=${sessionCookie!.value}`,
+    },
+  });
+  expect((await replay.get("/api/staff/me")).status()).toBe(401);
+  await replay.dispose();
+  await client.dispose();
+});
