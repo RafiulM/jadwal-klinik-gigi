@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { StaffShell } from "@/components/staff-shell";
+import { navForRoles, roleLabel, staffRoles } from "@/features/access/roles";
 
 // Pathless layout for signed-in screens. The check runs on the server during
 // SSR and again on client navigation. It protects pages only: API routes and
@@ -12,17 +13,18 @@ export const Route = createFileRoute("/_protected")({
   component: ProtectedLayout,
 });
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  dokter: "Dokter",
-  pemilik: "Pemilik",
-};
-
+// Menu dan label peran mengikuti user.role (dokter, admin, pemilik; bisa
+// lebih dari satu). Menyembunyikan menu bukan pengaman: setiap halaman dan
+// API tetap memeriksa izin sendiri.
 function ProtectedLayout() {
   const { user } = Route.useRouteContext().session;
-  const role = (user.role ?? "").split(",")[0]?.trim() ?? "";
+  const roles = staffRoles(user.role);
   return (
-    <StaffShell user={user} roleLabel={ROLE_LABELS[role] ?? "Staf klinik"}>
+    <StaffShell
+      user={user}
+      roleLabel={roleLabel(roles)}
+      nav={navForRoles(roles)}
+    >
       <Outlet />
     </StaffShell>
   );

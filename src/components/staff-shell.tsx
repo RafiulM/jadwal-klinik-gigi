@@ -5,30 +5,13 @@ import {
   useRouter,
   useRouterState,
 } from "@tanstack/react-router";
-import {
-  CalendarCheck,
-  CalendarClock,
-  CalendarRange,
-  Settings2,
-  LogOut,
-  Menu,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
+import type { StaffNavItem } from "@/features/access/roles";
 
-export type StaffNavItem = { to: string; label: string; icon: LucideIcon };
-
-// Menu staf. Item lain (papan jadwal, kelola klinik, rekap) ditambahkan
-// mengikuti peran saat fitur-fiturnya dibuat.
-export const STAFF_NAV: StaffNavItem[] = [
-  { to: "/dokter", label: "Jadwal hari ini", icon: CalendarCheck },
-  { to: "/kontrol", label: "Kontrol pasien", icon: CalendarClock },
-  { to: "/jadwal", label: "Papan jadwal", icon: CalendarRange },
-  { to: "/kelola", label: "Kelola klinik", icon: Settings2 },
-];
+export type { StaffNavItem } from "@/features/access/roles";
 
 function initialsOf(name: string) {
   return (
@@ -44,12 +27,13 @@ function initialsOf(name: string) {
 export function StaffShell({
   user,
   roleLabel,
-  nav = STAFF_NAV,
+  nav,
   children,
 }: {
   user: { name: string; email: string };
   roleLabel: string;
-  nav?: StaffNavItem[];
+  /** Menu sesuai peran akun (lihat navForRoles). */
+  nav: StaffNavItem[];
   children: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,6 +117,12 @@ export function StaffShell({
               </Link>
             );
           })}
+          {nav.length === 0 ? (
+            <p className="px-3 text-sm text-on-brand-deep-muted">
+              Akun ini belum punya peran staf. Minta admin klinik memberi akses
+              dokter, admin, atau pemilik.
+            </p>
+          ) : null}
         </nav>
 
         <div className="mt-auto grid gap-3 rounded-md bg-brand-deep-hover p-3">
