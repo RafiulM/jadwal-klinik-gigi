@@ -124,6 +124,15 @@ export function withApiPermission(
   });
 }
 
+// Endpoint Kelola klinik (layanan, dokter, jam praktik): hanya admin.
+// Mutasi tetap wajib dari origin aplikasi (dicek withApiSession).
+export function withClinicAdmin(
+  request: Request,
+  handler: (session: Session) => Promise<Response>,
+) {
+  return withApiPermission(request, { clinic: ["manage"] }, handler);
+}
+
 export async function readJson(request: Request): Promise<unknown> {
   const contentType = request.headers
     .get("content-type")

@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { hasPermissionFn } from "@/lib/session";
 import { z } from "zod";
 import { siteConfig } from "@/config/site";
 import { SchedulePage } from "@/features/schedule/schedule-page";
@@ -17,6 +18,11 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_protected/jadwal")({
   validateSearch: searchSchema,
+  // Papan jadwal memuat data semua dokter: tanpa izin, halaman tidak ada.
+  beforeLoad: async () => {
+    if (!(await hasPermissionFn({ data: { schedule: ["read-any"] } })))
+      throw notFound();
+  },
   head: () => ({ meta: [{ title: `Papan jadwal | ${siteConfig.name}` }] }),
   component: SchedulePage,
 });
