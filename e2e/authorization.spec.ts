@@ -46,15 +46,17 @@ const ENDPOINTS = [
   "/api/schedule",
   "/api/admin/services",
   "/api/admin/doctors",
+  "/api/reports/daily",
 ];
 
-// Status yang diharapkan per peran, urut sesuai ENDPOINTS.
+// Status yang diharapkan per peran, urut sesuai ENDPOINTS. Rekap harian
+// hanya untuk pemilik, termasuk tidak untuk admin.
 const MATRIX: [string | null, number[]][] = [
-  [null, [403, 403, 403, 403]],
-  ["dokter", [200, 403, 403, 403]],
-  ["admin", [200, 200, 200, 200]],
-  ["pemilik", [403, 200, 403, 403]],
-  ["admin,pemilik", [200, 200, 200, 200]],
+  [null, [403, 403, 403, 403, 403]],
+  ["dokter", [200, 403, 403, 403, 403]],
+  ["admin", [200, 200, 200, 200, 403]],
+  ["pemilik", [403, 200, 403, 403, 200]],
+  ["admin,pemilik", [200, 200, 200, 200, 200]],
 ];
 
 for (const [role, expected] of MATRIX)
@@ -95,4 +97,9 @@ test("peran tidak bisa diatur lewat pendaftaran", async ({ request }) => {
     );
     expect(rows[0].role).not.toContain("admin");
   } else expect([400, 422, 429]).toContain(response.status());
+});
+
+test("tamu tanpa sesi mendapat 401 di semua API staf", async ({ request }) => {
+  for (const url of [...ENDPOINTS, "/api/doctor/today", "/api/staff/me"])
+    expect((await request.get(url)).status()).toBe(401);
 });
