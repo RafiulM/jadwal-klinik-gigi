@@ -13,6 +13,12 @@ import { StatusBadge, type AppointmentStatus } from "@/components/status-badge";
 import { TODAY, TODAY_APPOINTMENTS, type TodayAppointment } from "./mock-data";
 import { MarkedVisit, PendingVisitActions } from "./visit-actions";
 import { NoteField, SavedNote } from "./visit-note";
+import {
+  FollowUpDateField,
+  followUpDateError,
+} from "@/features/followup/follow-up-field";
+import { SavedFollowUp } from "@/features/followup/saved-follow-up";
+import { formatLongDate } from "@/features/booking/format";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
   { id: "semua", label: "Semua" },
@@ -67,6 +73,10 @@ export function DoctorTodayPage() {
   const [message, setMessage] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState(false);
+  const [followUpDrafts, setFollowUpDrafts] = useState<Record<string, string>>(
+    {},
+  );
+  const followUpRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<"done" | "no_show" | "undo" | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusHeadingRef = useRef(false);
@@ -132,20 +142,30 @@ export function DoctorTodayPage() {
     kind: "done" | "no_show" | "undo",
   ) {
     if (!selected || busy) return;
+    const followUp = followUpDrafts[selected.id] ?? selected.followUpDate;
+    if (status === "completed" && followUpDateError(followUp, TODAY.date)) {
+      followUpRef.current?.focus();
+      return;
+    }
     setBusy(kind);
     await new Promise((resolve) => setTimeout(resolve, 400));
     const note = (noteDrafts[selected.id] ?? selected.notes).trim();
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === selected.id
-          ? { ...a, status, notes: status === "completed" ? note : a.notes }
+          ? {
+              ...a,
+              status,
+              notes: status === "completed" ? note : a.notes,
+              followUpDate: status === "completed" ? followUp : a.followUpDate,
+            }
           : a,
       ),
     );
     focusHeadingRef.current = true;
     setMessage(
       status === "completed"
-        ? `${selected.patient.name} ditandai selesai.`
+        ? `${selected.patient.name} ditandai selesai.${followUp ? ` Kontrol berikutnya ${formatLongDate(followUp)} tercatat.` : ""}`
         : status === "no_show"
           ? `${selected.patient.name} ditandai tidak datang.`
           : `Tanda untuk ${selected.patient.name} dibatalkan. Status kembali menunggu.`,
@@ -163,6 +183,25 @@ export function DoctorTodayPage() {
     );
     setNoteDrafts((prev) => ({ ...prev, [selected.id]: note }));
     setMessage(`Catatan untuk ${selected.patient.name} disimpan.`);
+    setSavingNote(false);
+  }
+
+  // Simulasi PATCH tanggal kontrol sampai API tersedia.
+  async function saveFollowUp(date: string) {
+    if (!selected) return;
+    setSavingNote(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === selected.id ? { ...a, followUpDate: date } : a,
+      ),
+    );
+    setFollowUpDrafts((prev) => ({ ...prev, [selected.id]: date }));
+    setMessage(
+      date
+        ? `Kontrol berikutnya ${selected.patient.name}: ${formatLongDate(date)}.`
+        : `Jadwal kontrol ${selected.patient.name} dikosongkan.`,
+    );
     setSavingNote(false);
   }
 
@@ -499,6 +538,18 @@ export function DoctorTodayPage() {
                       }))
                     }
                   />
+                  <FollowUpDateField
+                    value={followUpDrafts[selected.id] ?? selected.followUpDate}
+                    today={TODAY.date}
+                    inputRef={followUpRef}
+                    showError
+                    onChange={(value) =>
+                      setFollowUpDrafts((prev) => ({
+                        ...prev,
+                        [selected.id]: value,
+                      }))
+                    }
+                  />
                 </PendingVisitActions>
               ) : (
                 <MarkedVisit
@@ -514,6 +565,15 @@ export function DoctorTodayPage() {
                       note={selected.notes}
                       saving={savingNote}
                       onSave={saveNote}
+                    />
+                  ) : null}
+                  {selected.status === "completed" ? (
+                    <SavedFollowUp
+                      key={`${selected.id}-kontrol`}
+                      date={selected.followUpDate}
+                      today={TODAY.date}
+                      saving={savingNote}
+                      onSave={saveFollowUp}
                     />
                   ) : null}
                 </MarkedVisit>

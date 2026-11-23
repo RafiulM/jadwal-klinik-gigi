@@ -10,6 +10,8 @@ export type TodayAppointment = {
   endTime: string;
   status: AppointmentStatus;
   notes: string;
+  /** Tanggal kontrol berikutnya yang ditetapkan dokter; kosong bila tidak ada. */
+  followUpDate: string;
   service: { id: string; name: string; followUpDays: number | null };
   patient: { id: string; name: string; phone: string; firstVisit: boolean };
 };
@@ -27,6 +29,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     status: "completed",
     notes:
       "Karang gigi rahang bawah cukup tebal. Gusi sedikit berdarah saat dibersihkan.",
+    followUpDate: "2027-05-22",
     service: { id: "scaling", name: "Scaling", followUpDays: 180 },
     patient: {
       id: "p1",
@@ -41,6 +44,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     endTime: "10:30",
     status: "no_show",
     notes: "",
+    followUpDate: "",
     service: { id: "tambal", name: "Tambal gigi", followUpDays: null },
     patient: {
       id: "p2",
@@ -55,6 +59,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     endTime: "11:00",
     status: "scheduled",
     notes: "",
+    followUpDate: "",
     service: {
       id: "periksa",
       name: "Periksa & konsultasi",
@@ -73,6 +78,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     endTime: "11:30",
     status: "scheduled",
     notes: "",
+    followUpDate: "",
     service: { id: "scaling", name: "Scaling", followUpDays: 180 },
     patient: {
       id: "p4",
@@ -87,6 +93,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     endTime: "12:30",
     status: "scheduled",
     notes: "",
+    followUpDate: "",
     service: { id: "tambal", name: "Tambal gigi", followUpDays: null },
     patient: {
       id: "p5",
@@ -101,6 +108,7 @@ export const TODAY_APPOINTMENTS: TodayAppointment[] = [
     endTime: "13:30",
     status: "scheduled",
     notes: "",
+    followUpDate: "",
     service: { id: "scaling", name: "Scaling", followUpDays: 180 },
     patient: {
       id: "p6",
