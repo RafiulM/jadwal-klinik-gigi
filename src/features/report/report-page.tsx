@@ -25,6 +25,7 @@ import { ErrorNote, LoadingNote } from "@/features/booking/load-state";
 import { reportApi, type DailyReport, type DayRecap } from "./api";
 import { DoctorTable } from "./doctor-table";
 import { StatusBars } from "./status-bars";
+import { DoctorPeriod, TrendColumns } from "./period-charts";
 import { card, percent } from "./format";
 
 const route = getRouteApi("/_protected/rekap");
@@ -166,12 +167,26 @@ function ReportView({
         />
       )}
 
-      {!closed ? (
-        <div className="grid gap-5">
-          <StatusBars day={day} />
-          <DoctorTable day={day} absent={absent} />
-        </div>
-      ) : null}
+      <div className="grid gap-5">
+        {!closed ? (
+          <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+            <StatusBars day={day} />
+            <TrendColumns
+              report={report}
+              selected={day.date}
+              onSelect={setSelected}
+            />
+          </div>
+        ) : (
+          <TrendColumns
+            report={report}
+            selected={day.date}
+            onSelect={setSelected}
+          />
+        )}
+        {!closed ? <DoctorTable day={day} absent={absent} /> : null}
+        <DoctorPeriod report={report} />
+      </div>
     </div>
   );
 }
