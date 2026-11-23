@@ -31,6 +31,7 @@ import { Route as ApiNotesIdRouteImport } from './routes/api/notes/$id'
 import { Route as ApiAdminNotesIndexRouteImport } from './routes/api/admin/notes/index'
 import { Route as ApiAdminNotesIdRouteImport } from './routes/api/admin/notes/$id'
 import { Route as ApiDoctorAppointmentsIdRouteImport } from './routes/api/doctor/appointments/$id'
+import { Route as ApiPatientsIdHistoryRouteImport } from './routes/api/patients/$id/history'
 import { Route as ApiDoctorAppointmentsIdNoteRouteImport } from './routes/api/doctor/appointments/$id/note'
 
 const IndexRoute = IndexRouteImport.update({
@@ -141,6 +142,11 @@ const ApiDoctorAppointmentsIdRoute = ApiDoctorAppointmentsIdRouteImport.update({
   path: '/api/doctor/appointments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPatientsIdHistoryRoute = ApiPatientsIdHistoryRouteImport.update({
+  id: '/api/patients/$id/history',
+  path: '/api/patients/$id/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDoctorAppointmentsIdNoteRoute =
   ApiDoctorAppointmentsIdNoteRouteImport.update({
     id: '/note',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/admin/notes/': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/api/notes': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/admin/notes': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/admin/notes/$id': typeof ApiAdminNotesIdRoute
   '/api/doctor/appointments/$id': typeof ApiDoctorAppointmentsIdRouteWithChildren
+  '/api/patients/$id/history': typeof ApiPatientsIdHistoryRoute
   '/api/admin/notes/': typeof ApiAdminNotesIndexRoute
   '/api/doctor/appointments/$id/note': typeof ApiDoctorAppointmentsIdNoteRoute
 }
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/notes/'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/patients/$id/history'
     | '/api/admin/notes/'
     | '/api/doctor/appointments/$id/note'
   fileRoutesByTo: FileRoutesByTo
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/api/notes'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/patients/$id/history'
     | '/api/admin/notes'
     | '/api/doctor/appointments/$id/note'
   id:
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/api/notes/'
     | '/api/admin/notes/$id'
     | '/api/doctor/appointments/$id'
+    | '/api/patients/$id/history'
     | '/api/admin/notes/'
     | '/api/doctor/appointments/$id/note'
   fileRoutesById: FileRoutesById
@@ -310,6 +322,7 @@ export interface RootRouteChildren {
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
   ApiAdminNotesIdRoute: typeof ApiAdminNotesIdRoute
   ApiDoctorAppointmentsIdRoute: typeof ApiDoctorAppointmentsIdRouteWithChildren
+  ApiPatientsIdHistoryRoute: typeof ApiPatientsIdHistoryRoute
   ApiAdminNotesIndexRoute: typeof ApiAdminNotesIndexRoute
 }
 
@@ -469,6 +482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDoctorAppointmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/patients/$id/history': {
+      id: '/api/patients/$id/history'
+      path: '/api/patients/$id/history'
+      fullPath: '/api/patients/$id/history'
+      preLoaderRoute: typeof ApiPatientsIdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/doctor/appointments/$id/note': {
       id: '/api/doctor/appointments/$id/note'
       path: '/note'
@@ -539,6 +559,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNotesIndexRoute: ApiNotesIndexRoute,
   ApiAdminNotesIdRoute: ApiAdminNotesIdRoute,
   ApiDoctorAppointmentsIdRoute: ApiDoctorAppointmentsIdRouteWithChildren,
+  ApiPatientsIdHistoryRoute: ApiPatientsIdHistoryRoute,
   ApiAdminNotesIndexRoute: ApiAdminNotesIndexRoute,
 }
 export const routeTree = rootRouteImport
