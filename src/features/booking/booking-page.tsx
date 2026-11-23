@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 import { DATES, DOCTORS, SERVICES } from "./mock-data";
 import { StepHeading } from "./step-heading";
+import { StepDoctor } from "./step-doctor";
 import { StepService } from "./step-service";
 
 export const STEPS = [
@@ -89,6 +90,18 @@ export function BookingPage() {
     });
   }
 
+  function chooseDoctor(id: string) {
+    setBooking((prev) =>
+      prev.doctorId === id
+        ? prev
+        : { ...prev, doctorId: id, dateId: null, time: null },
+    );
+  }
+
+  const doctorsForService = booking.serviceId
+    ? DOCTORS.filter((d) => d.serviceIds.includes(booking.serviceId!))
+    : [];
+
   const canNext =
     step === 0
       ? Boolean(booking.serviceId)
@@ -118,6 +131,14 @@ export function BookingPage() {
                 services={SERVICES}
                 selectedId={booking.serviceId}
                 onSelect={chooseService}
+                headingRef={headingRef}
+              />
+            ) : step === 1 ? (
+              <StepDoctor
+                doctors={doctorsForService}
+                serviceName={service?.name ?? null}
+                selectedId={booking.doctorId}
+                onSelect={chooseDoctor}
                 headingRef={headingRef}
               />
             ) : (
