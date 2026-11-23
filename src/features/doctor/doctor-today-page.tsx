@@ -1,15 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  Calendar,
-  RotateCcw,
-  Search,
-  SearchX,
-  Stethoscope,
-} from "lucide-react";
+import { ArrowLeft, Calendar, RotateCcw, Search, SearchX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge, type AppointmentStatus } from "@/components/status-badge";
 import { TODAY, TODAY_APPOINTMENTS, type TodayAppointment } from "./mock-data";
+import { MarkedVisit, PendingVisitActions } from "./visit-actions";
 
 const FILTERS: { id: "semua" | AppointmentStatus; label: string }[] = [
   { id: "semua", label: "Semua" },
@@ -59,7 +53,12 @@ export function PatientAvatar({
 }
 
 export function DoctorTodayPage() {
-  const [appointments] = useState<TodayAppointment[]>(TODAY_APPOINTMENTS);
+  const [appointments, setAppointments] =
+    useState<TodayAppointment[]>(TODAY_APPOINTMENTS);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState<"done" | "no_show" | "undo" | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const focusHeadingRef = useRef(false);
   const [selectedId, setSelectedId] = useState(
     () => TODAY_APPOINTMENTS.find((a) => a.status === "scheduled")?.id ?? "",
   );
@@ -98,6 +97,51 @@ export function DoctorTodayPage() {
   const nextUp = appointments.find((a) => a.status === "scheduled");
   const selected =
     appointments.find((a) => a.id === selectedId) ?? appointments[0];
+
+  const afterSelected = appointments.find(
+    (a) =>
+      a.status === "scheduled" &&
+      a.time > (selected?.time ?? "") &&
+      a.id !== selected?.id,
+  );
+  const nextPatient =
+    afterSelected ??
+    appointments.find((a) => a.status === "scheduled" && a.id !== selected?.id);
+
+  // Setelah menandai, fokus pindah ke nama pasien agar tidak hilang saat tombol berganti.
+  useEffect(() => {
+    if (!focusHeadingRef.current) return;
+    focusHeadingRef.current = false;
+    headingRef.current?.focus();
+  }, [selected?.id, selected?.status]);
+
+  // Simulasi PATCH status sampai API tersedia di layer backend.
+  async function changeStatus(
+    status: AppointmentStatus,
+    kind: "done" | "no_show" | "undo",
+  ) {
+    if (!selected || busy) return;
+    setBusy(kind);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === selected.id ? { ...a, status } : a)),
+    );
+    focusHeadingRef.current = true;
+    setMessage(
+      status === "completed"
+        ? `${selected.patient.name} ditandai selesai.`
+        : status === "no_show"
+          ? `${selected.patient.name} ditandai tidak datang.`
+          : `Tanda untuk ${selected.patient.name} dibatalkan. Status kembali menunggu.`,
+    );
+    setBusy(null);
+  }
+
+  function goToPatient(id: string) {
+    focusHeadingRef.current = true;
+    setSelectedId(id);
+    setMessage("");
+  }
 
   function resetFilters() {
     setFilter("semua");
@@ -259,6 +303,7 @@ export function DoctorTodayPage() {
                       aria-current={current || undefined}
                       onClick={() => {
                         setSelectedId(a.id);
+                        setMessage("");
                         setView("detail");
                       }}
                       className={cn(
@@ -347,8 +392,10 @@ export function DoctorTodayPage() {
               <div className="grid min-w-0 gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
+                    ref={headingRef}
+                    tabIndex={-1}
                     id="detail-pasien"
-                    className="text-xl leading-tight font-bold tracking-tight break-words"
+                    className="text-xl leading-tight font-bold tracking-tight break-words outline-none"
                   >
                     {selected.patient.name}
                   </h2>
@@ -367,22 +414,29 @@ export function DoctorTodayPage() {
               </div>
             </div>
 
-            <dl className="grid gap-4">
-              <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className="inline-flex size-8 items-center justify-center rounded-md bg-primary-50 text-primary"
-                >
-                  <Stethoscope className="size-4" />
-                </span>
-                <div className="grid gap-1">
-                  <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    Layanan
-                  </dt>
-                  <dd>{selected.service.name}</dd>
-                </div>
-              </div>
-            </dl>
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-md bg-success-soft px-4 py-3 text-sm font-medium text-success empty:hidden"
+            >
+              {message}
+            </p>
+
+            {selected.status === "scheduled" ? (
+              <PendingVisitActions
+                busy={busy === "done" || busy === "no_show" ? busy : null}
+                onDone={() => changeStatus("completed", "done")}
+                onNoShow={() => changeStatus("no_show", "no_show")}
+              />
+            ) : (
+              <MarkedVisit
+                appointment={selected}
+                nextPatient={nextPatient}
+                onNext={() => nextPatient && goToPatient(nextPatient.id)}
+                onUndo={() => changeStatus("scheduled", "undo")}
+                busy={busy !== null}
+              />
+            )}
           </section>
         ) : null}
       </div>
