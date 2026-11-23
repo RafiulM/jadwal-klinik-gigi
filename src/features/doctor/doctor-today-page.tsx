@@ -23,6 +23,7 @@ import { PatientHistory } from "@/features/followup/patient-history";
 import {
   FOLLOW_UPS,
   HISTORY,
+  type FollowUp,
   type HistoryVisit,
 } from "@/features/followup/mock-data";
 import { formatLongDate } from "@/features/booking/format";
@@ -240,16 +241,44 @@ export function DoctorTodayPage() {
         ),
       ]
     : [];
-  const pendingFollowUp = selected
-    ? FOLLOW_UPS.find(
-        (f) => f.patient.id === selected.patient.id && f.status !== "done",
-      )
-    : undefined;
-  const nextFollowUp = selected?.followUpDate
-    ? { date: selected.followUpDate, service: selected.service.name }
-    : pendingFollowUp
-      ? { date: pendingFollowUp.dueDate, service: pendingFollowUp.service.name }
-      : null;
+  // Kontrol milik pasien: kontrol baru dari kunjungan hari ini (bila tanggal
+  // sudah ditetapkan) + kontrol lain yang asalnya bukan kunjungan hari ini.
+  const todayVisitIds = new Set(
+    (selected ? (HISTORY[selected.patient.id] ?? []) : [])
+      .filter((v) => v.date === TODAY.date)
+      .map((v) => v.id),
+  );
+  const patientFollowUps: FollowUp[] = selected
+    ? [
+        ...(selected.status === "completed" && selected.followUpDate
+          ? [
+              {
+                id: `kontrol-${selected.id}`,
+                dueDate: selected.followUpDate,
+                status: "pending" as const,
+                notes: "",
+                service: selected.service,
+                doctor: { id: "rina", name: TODAY.doctor.name },
+                patient: selected.patient,
+                sourceVisitId: `today-${selected.id}`,
+              },
+            ]
+          : []),
+        ...FOLLOW_UPS.filter(
+          (f) =>
+            f.patient.id === selected.patient.id &&
+            !(f.sourceVisitId && todayVisitIds.has(f.sourceVisitId)),
+        ),
+      ]
+    : [];
+  const upcoming = patientFollowUps.find((f) => f.status !== "done");
+  const nextFollowUp = upcoming
+    ? {
+        date: upcoming.dueDate,
+        service: upcoming.service.name,
+        status: upcoming.status,
+      }
+    : null;
 
   function resetFilters() {
     setFilter("semua");
@@ -637,7 +666,12 @@ export function DoctorTodayPage() {
               )}
 
               <div className="border-t pt-5">
-                <PatientHistory visits={history} nextFollowUp={nextFollowUp} />
+                <PatientHistory
+                  visits={history}
+                  nextFollowUp={nextFollowUp}
+                  followUps={patientFollowUps}
+                  today={TODAY.date}
+                />
               </div>
             </section>
           ) : null}

@@ -36,6 +36,12 @@ export function formatLongDate(isoDate: string) {
   return `${DAY_LONG[dow]}, ${d} ${MONTHS[m - 1]} ${y}`;
 }
 
+/** "2026-11-25" → "25 Nov 2026" */
+export function formatShortDate(isoDate: string) {
+  const { y, m, d } = parts(isoDate);
+  return `${d} ${MONTHS[m - 1].slice(0, 3)} ${y}`;
+}
+
 /** Judul rentang bulan untuk daftar tanggal, mis. "November–Desember 2026". */
 export function monthRangeLabel(dates: string[]) {
   if (dates.length === 0) return "";

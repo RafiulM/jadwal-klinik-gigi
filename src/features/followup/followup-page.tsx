@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  CalendarCheck,
   CircleAlert,
-  CircleCheck,
   History,
-  PhoneCall,
   RotateCcw,
   Search,
   SearchX,
   X,
-  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatLongDate, initialsOf } from "@/features/booking/format";
+import {
+  formatLongDate,
+  formatShortDate,
+  initialsOf,
+} from "@/features/booking/format";
 import { PatientHistory } from "./patient-history";
+import { DueHint, FollowUpBadge, daysBetween } from "./follow-up-status";
 import {
   FOLLOW_UPS,
   HISTORY,
@@ -24,27 +25,6 @@ import {
 
 const card =
   "rounded-xl border bg-card shadow-[0_1px_2px_rgb(27_36_33/0.05),0_8px_24px_rgb(27_36_33/0.05)]";
-
-export const FOLLOW_UP_STATUS: Record<
-  FollowUpStatus,
-  { label: string; icon: LucideIcon; className: string }
-> = {
-  pending: {
-    label: "Belum booking",
-    icon: PhoneCall,
-    className: "bg-warning-soft text-warning",
-  },
-  booked: {
-    label: "Sudah booking",
-    icon: CalendarCheck,
-    className: "bg-info-soft text-info",
-  },
-  done: {
-    label: "Selesai",
-    icon: CircleCheck,
-    className: "bg-success-soft text-success",
-  },
-};
 
 const STATUS_TILES: { id: "semua" | FollowUpStatus; label: string }[] = [
   { id: "semua", label: "Semua kontrol" },
@@ -60,12 +40,6 @@ const RANGES = [
   { id: "30", label: "30 hari ke depan" },
 ] as const;
 
-function daysBetween(from: string, to: string) {
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  return Math.round((b - a) / 86_400_000);
-}
-
 function DueLabel({
   dueDate,
   status,
@@ -73,45 +47,10 @@ function DueLabel({
   dueDate: string;
   status: FollowUpStatus;
 }) {
-  const diff = daysBetween(TODAY, dueDate);
-  let text = `${diff} hari lagi`;
-  let tone = "text-muted-foreground";
-  if (diff === 0) {
-    text = "Hari ini";
-    tone = "font-semibold text-warning";
-  } else if (diff < 0) {
-    text = `Terlambat ${-diff} hari`;
-    tone =
-      status === "pending"
-        ? "font-semibold text-destructive"
-        : "text-muted-foreground";
-  }
   return (
     <span className="grid gap-0.5">
       <span>{formatLongDate(dueDate)}</span>
-      {status !== "done" ? (
-        <span className={cn("flex items-center gap-1 text-xs", tone)}>
-          {diff < 0 && status === "pending" ? (
-            <CircleAlert className="size-3" aria-hidden="true" />
-          ) : null}
-          {text}
-        </span>
-      ) : null}
-    </span>
-  );
-}
-
-export function FollowUpBadge({ status }: { status: FollowUpStatus }) {
-  const meta = FOLLOW_UP_STATUS[status];
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs leading-tight font-semibold whitespace-nowrap",
-        meta.className,
-      )}
-    >
-      <meta.icon className="size-3" aria-hidden="true" />
-      {meta.label}
+      <DueHint dueDate={dueDate} status={status} today={TODAY} />
     </span>
   );
 }
@@ -319,6 +258,7 @@ export function FollowUpPage() {
                       <span className="text-xs text-muted-foreground">
                         {f.doctor.name}
                       </span>
+                      <SourceVisitHint followUp={f} />
                     </span>
                   </td>
                   <td className="md:border-b md:px-4 md:py-3">
@@ -373,6 +313,19 @@ export function FollowUpPage() {
   );
 }
 
+/** Kunjungan asal yang menetapkan tanggal kontrol ini. */
+function SourceVisitHint({ followUp }: { followUp: FollowUp }) {
+  const source = followUp.sourceVisitId
+    ? HISTORY[followUp.patient.id]?.find((v) => v.id === followUp.sourceVisitId)
+    : undefined;
+  if (!source) return null;
+  return (
+    <span className="text-xs text-muted-foreground">
+      Dari kunjungan {formatShortDate(source.date)}
+    </span>
+  );
+}
+
 function HistoryDialog({
   followUp,
   onClose,
@@ -388,6 +341,9 @@ function HistoryDialog({
     if (!followUp && dialog.open) dialog.close();
   }, [followUp]);
   const visits = followUp ? (HISTORY[followUp.patient.id] ?? []) : [];
+  const patientFollowUps = followUp
+    ? FOLLOW_UPS.filter((f) => f.patient.id === followUp.patient.id)
+    : [];
 
   return (
     <dialog
@@ -427,10 +383,17 @@ function HistoryDialog({
             <PatientHistory
               showHeading={false}
               visits={visits}
+              followUps={patientFollowUps}
+              today={TODAY}
+              highlightVisitId={followUp.sourceVisitId}
               nextFollowUp={
                 followUp.status === "done"
                   ? null
-                  : { date: followUp.dueDate, service: followUp.service.name }
+                  : {
+                      date: followUp.dueDate,
+                      service: followUp.service.name,
+                      status: followUp.status,
+                    }
               }
             />
           </div>

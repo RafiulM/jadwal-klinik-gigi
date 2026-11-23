@@ -1,7 +1,7 @@
 // Data tiruan kontrol pasien selama layer frontend fase 2 dikerjakan.
 // Kontrak API yang akan dibuat di layer backend:
 //   GET /api/follow-ups?status=&range=&q=  → FollowUp[]
-//   GET /api/patients/:id/history          → PatientHistory
+//   GET /api/patients/:id/history          → { visits: HistoryVisit[], followUps: FollowUp[] }
 
 export type FollowUpStatus = "pending" | "booked" | "done";
 
@@ -13,6 +13,8 @@ export type FollowUp = {
   service: { id: string; name: string };
   doctor: { id: string; name: string };
   patient: { id: string; name: string; phone: string };
+  /** Kunjungan yang menetapkan tanggal kontrol ini (null bila dibuat manual). */
+  sourceVisitId: string | null;
 };
 
 export type HistoryVisit = {
@@ -37,6 +39,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "scaling", name: "Scaling" },
     doctor: { id: "rina", name: "drg. Rina Pratiwi" },
     patient: { id: "p7", name: "Hendra Gunawan", phone: "0812••••3318" },
+    sourceVisitId: "h6",
   },
   {
     id: "f2",
@@ -46,6 +49,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "behel", name: "Kontrol behel" },
     doctor: { id: "bagus", name: "drg. Bagus Setiawan, Sp.Ort" },
     patient: { id: "p8", name: "Putri Maharani", phone: "0857••••2290" },
+    sourceVisitId: "h7",
   },
   {
     id: "f3",
@@ -55,6 +59,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "behel", name: "Kontrol behel" },
     doctor: { id: "bagus", name: "drg. Bagus Setiawan, Sp.Ort" },
     patient: { id: "p9", name: "Dimas Prasetyo", phone: "0813••••7741" },
+    sourceVisitId: "h8",
   },
   {
     id: "f4",
@@ -64,6 +69,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "tambal", name: "Tambal gigi" },
     doctor: { id: "maya", name: "drg. Maya Lestari" },
     patient: { id: "p2", name: "Andi Pratama", phone: "0812••••3092" },
+    sourceVisitId: "h4",
   },
   {
     id: "f5",
@@ -73,6 +79,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "scaling", name: "Scaling" },
     doctor: { id: "rina", name: "drg. Rina Pratiwi" },
     patient: { id: "p1", name: "Sari Wulandari", phone: "0813••••4471" },
+    sourceVisitId: "h1",
   },
   {
     id: "f6",
@@ -82,6 +89,7 @@ export const FOLLOW_UPS: FollowUp[] = [
     service: { id: "scaling", name: "Scaling" },
     doctor: { id: "rina", name: "drg. Rina Pratiwi" },
     patient: { id: "p4", name: "Rudi Hartono", phone: "0811••••2286" },
+    sourceVisitId: "h5",
   },
 ];
 

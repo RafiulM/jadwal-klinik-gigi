@@ -2,20 +2,35 @@ import { CalendarPlus, History, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { displayTime, formatLongDate } from "@/features/booking/format";
-import type { HistoryVisit } from "./mock-data";
+import type { FollowUp, FollowUpStatus, HistoryVisit } from "./mock-data";
+import { DueHint, FollowUpBadge } from "./follow-up-status";
 
 /**
  * Riwayat kunjungan pasien: kapan terakhir datang, kontrol berikutnya,
- * dan garis waktu kunjungan (terbaru di atas).
+ * dan garis waktu kunjungan (terbaru di atas). Tanggal kontrol pada tiap
+ * kunjungan disambungkan ke data kontrolnya (lewat `sourceVisitId`) sehingga
+ * terlihat apakah pasien sudah booking, sudah datang, atau terlambat.
  */
 export function PatientHistory({
   visits,
   nextFollowUp,
   headingLevel = "h3",
   showHeading = true,
+  followUps = [],
+  today,
+  highlightVisitId = null,
 }: {
   visits: HistoryVisit[];
-  nextFollowUp: { date: string; service: string } | null;
+  nextFollowUp: {
+    date: string;
+    service: string;
+    status?: FollowUpStatus;
+  } | null;
+  /** Data kontrol milik pasien ini, untuk status tiap tanggal kontrol. */
+  followUps?: FollowUp[];
+  today: string;
+  /** Kunjungan yang ingin ditonjolkan, mis. asal kontrol yang sedang dibuka. */
+  highlightVisitId?: string | null;
   headingLevel?: "h2" | "h3";
   /** Sembunyikan judul bila wadahnya (mis. dialog) sudah berjudul sama. */
   showHeading?: boolean;
@@ -57,10 +72,20 @@ export function PatientHistory({
             <dt className="text-xs text-muted-foreground">
               Kontrol berikutnya
             </dt>
-            <dd className="text-sm font-semibold">
+            <dd className="grid justify-items-start gap-1 text-sm font-semibold">
               {nextFollowUp
                 ? `${formatLongDate(nextFollowUp.date)} · ${nextFollowUp.service}`
                 : "Belum dijadwalkan"}
+              {nextFollowUp?.status ? (
+                <span className="flex flex-wrap items-center gap-2 font-normal">
+                  <FollowUpBadge status={nextFollowUp.status} />
+                  <DueHint
+                    dueDate={nextFollowUp.date}
+                    status={nextFollowUp.status}
+                    today={today}
+                  />
+                </span>
+              ) : null}
             </dd>
           </div>
         </div>
@@ -90,7 +115,18 @@ export function PatientHistory({
                       : "bg-info ring-3 ring-info-soft",
                 )}
               />
-              <div className="grid gap-1">
+              <div
+                className={cn(
+                  "grid gap-1",
+                  v.id === highlightVisitId &&
+                    "-m-2 rounded-lg bg-primary-50 p-2 ring-1 ring-primary-soft",
+                )}
+              >
+                {v.id === highlightVisitId ? (
+                  <p className="text-xs font-semibold text-primary">
+                    Kunjungan yang menetapkan kontrol ini
+                  </p>
+                ) : null}
                 <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                   {formatLongDate(v.date)}, {displayTime(v.time)} · {v.service}
                   <StatusBadge status={v.status} />
@@ -102,10 +138,11 @@ export function PatientHistory({
                   </p>
                 ) : null}
                 {v.followUpDate ? (
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <CalendarPlus className="size-3.5" aria-hidden="true" />
-                    Kontrol ditetapkan: {formatLongDate(v.followUpDate)}
-                  </p>
+                  <FollowUpLine
+                    date={v.followUpDate}
+                    followUp={followUps.find((f) => f.sourceVisitId === v.id)}
+                    today={today}
+                  />
                 ) : null}
               </div>
             </li>
@@ -117,5 +154,36 @@ export function PatientHistory({
         </p>
       )}
     </section>
+  );
+}
+
+function FollowUpLine({
+  date,
+  followUp,
+  today,
+}: {
+  date: string;
+  followUp: FollowUp | undefined;
+  today: string;
+}) {
+  // Tanggal di data kontrol bisa sudah diubah admin/dokter setelah kunjungan.
+  const dueDate = followUp?.dueDate ?? date;
+  return (
+    <div className="grid gap-1 text-sm text-muted-foreground">
+      <p className="flex items-center gap-1">
+        <CalendarPlus className="size-3.5 shrink-0" aria-hidden="true" />
+        Kontrol ditetapkan: {formatLongDate(dueDate)}
+      </p>
+      {followUp ? (
+        <span className="flex flex-wrap items-center gap-2 pl-4.5">
+          <FollowUpBadge status={followUp.status} />
+          <DueHint
+            dueDate={followUp.dueDate}
+            status={followUp.status}
+            today={today}
+          />
+        </span>
+      ) : null}
+    </div>
   );
 }
