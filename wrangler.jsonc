@@ -4,16 +4,16 @@
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./cloudflare/worker.ts",
-  // Run the Worker close to Supabase (ap-southeast-1) instead of near the visitor.
-  "placement": { "mode": "smart" },
+  // Run the Worker next to Supabase (ap-southeast-1), same as Vercel sin1.
+  "placement": { "region": "aws:ap-southeast-1" },
   "observability": { "enabled": true },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "HYPERDRIVE_ID_PLACEHOLDER"
+      "id": "6e02c69a09a34bb798b3fd444e59f0c8"
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://klinik-gigi.example.workers.dev"
+    "BETTER_AUTH_URL": "https://klinik-gigi.rafiul.workers.dev"
   }
 }
