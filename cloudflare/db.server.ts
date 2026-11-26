@@ -11,7 +11,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
 
-function connect(connectionString: string) {
+function connect(connectionString?: string) {
   const pool = new Pool({
     connectionString,
     max: 5,
@@ -27,13 +27,15 @@ type Db = ReturnType<typeof connect>;
 
 export const requestScope = new AsyncLocalStorage<{ db?: Db }>();
 
-// Used only for property reads outside a request (e.g. adapter setup at module
-// load). It never connects unless queried, which would be a bug anyway.
+// Used only for metadata reads outside a request: Better Auth's drizzleAdapter
+// reads db._.schema at module load. Reading the Hyperdrive binding there is a
+// "Disallowed operation called within global scope", so this instance has no
+// connection string and must never be queried.
 let detached: Db | undefined;
 
 function current(): Db {
   const store = requestScope.getStore();
-  if (!store) return (detached ??= connect(env.HYPERDRIVE.connectionString));
+  if (!store) return (detached ??= connect());
   return (store.db ??= connect(env.HYPERDRIVE.connectionString));
 }
 
