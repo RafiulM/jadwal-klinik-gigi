@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "klinik-gigi",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./cloudflare/worker.ts",
+  // Run the Worker close to Supabase (ap-southeast-1) instead of near the visitor.
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "HYPERDRIVE_ID_PLACEHOLDER"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://klinik-gigi.example.workers.dev"
+  }
+}

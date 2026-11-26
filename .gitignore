@@ -27,3 +27,7 @@ coverage/
 .ngodingpakeai/pending.json
 .ngodingpakeai/summaries.json
 .ngodingpakeai/index/
+
+# Cloudflare local state
+.wrangler/
+.dev.vars*
