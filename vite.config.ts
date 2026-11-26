@@ -14,9 +14,10 @@ export default defineConfig(({ command, mode }) => {
   }
   return {
     server: { port: 3000 },
-    // node-server emits .output/server/index.mjs, a portable Node server that
-    // honors PORT and HOST. The Dockerfile ships only that folder.
-    nitro: { preset: "node-server" },
+    // No fixed Nitro preset: locally and in Docker/Coolify it defaults to
+    // node-server (.output/server/index.mjs, honors PORT and HOST); on Vercel
+    // Nitro auto-detects the platform and emits the vercel preset instead.
+    // Override with NITRO_PRESET if needed.
     plugins: [
       tailwindcss(),
       tsconfigPaths(),
