@@ -7,6 +7,9 @@
   // Run the Worker next to Supabase (ap-southeast-1), same as Vercel sin1.
   "placement": { "region": "aws:ap-southeast-1" },
   "observability": { "enabled": true },
+  // *.workers.dev is blocked by some Indonesian ISP DNS (XL Axiata), so the
+  // app is served from a custom domain on a zone already in this account.
+  "routes": [{ "pattern": "klinik-cf.ngodingpakeai.com", "custom_domain": true }],
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
@@ -14,6 +17,6 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://klinik-gigi.rafiul.workers.dev"
+    "BETTER_AUTH_URL": "https://klinik-cf.ngodingpakeai.com"
   }
 }
