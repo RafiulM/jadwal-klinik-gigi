@@ -56,6 +56,8 @@ services:
       BETTER_AUTH_URL: ${SERVICE_URL_APP}
       N8N_API_KEY: ${SERVICE_HEX_64_N8N}
       CLINIC_ADMIN_EMAILS: ${CLINIC_ADMIN_EMAILS:-}
+      # Koneksi database per proses app (default 5). Naikkan untuk VPS, mis. 20.
+      DB_POOL_MAX: ${DB_POOL_MAX:-5}
     depends_on:
       db:
         condition: service_healthy
