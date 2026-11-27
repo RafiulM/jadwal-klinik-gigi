@@ -3,10 +3,15 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { env } from "@/lib/env.server";
 import * as schema from "./schema";
 
+// Connections per app process. Serverless hosts (Vercel) run many instances,
+// so keep the default small there; a single long-running Node process (VPS)
+// can raise it with DB_POOL_MAX. Postgres max_connections must have room.
+const poolMax = Number(process.env.DB_POOL_MAX) || 5;
+
 function connect() {
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
-    max: 5,
+    max: poolMax,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
   });
